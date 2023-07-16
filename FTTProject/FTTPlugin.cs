@@ -1,10 +1,7 @@
 ﻿using BepInEx;
 using HarmonyLib;
-using KSP.Game;
-using KSP.Messages;
 using SpaceWarp;
 using SpaceWarp.API.Mods;
-using UnityEngine;
 
 namespace FTT
 {
@@ -27,13 +24,6 @@ namespace FTT
         {
             base.OnInitialized();
 
-
-            ColorsPatch.DeclareParts("FTT", (IEnumerable<string>)new List<string>()
-            {
-                "CV_101",
-            });
-            FTT.FTTPlugin.Instance = this;
-            Harmony.CreateAndPatchAll(typeof(FTTPlugin).Assembly, (string)null);
         }
         public override void OnPostInitialized() => base.OnPostInitialized();
 
