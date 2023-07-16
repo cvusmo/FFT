@@ -1,0 +1,22 @@
+{
+  "mod_id": "FTT",
+  "author": "cvusmo",
+  "name": "FTT",
+  "description": "Fancy Fuel Tanks",
+  "source": "https://github.com/cvusmo/FTT",
+  "version": "0.1.0",
+  "version_check": "",
+  "dependencies": [
+    {
+      "id":  "SpaceWarp",
+      "version": {
+        "min": "1.1.1",
+        "max": "*"
+      }
+    }
+  ],
+  "ksp2_version": {
+    "min": "0.1.0",
+    "max": "*"
+  }
+}
