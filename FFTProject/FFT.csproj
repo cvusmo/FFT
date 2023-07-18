@@ -5,15 +5,18 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <LangVersion>latest</LangVersion>
         <ImplicitUsings>true</ImplicitUsings>
-        <AssemblyName>FTT</AssemblyName>
-        <Product>FTT</Product>
+        <AssemblyName>FFT</AssemblyName>
+        <Product>FFT</Product>
         <Description>Fancy Fuel Tanks</Description>
         <Version>0.1.0</Version>
         <RestoreAdditionalProjectSources>
             https://nuget.spacewarp.org/v3/index.json
         </RestoreAdditionalProjectSources>
-        <RootNamespace>FTT</RootNamespace>
+        <RootNamespace>FFT</RootNamespace>
         <ModId Condition="'$(ModId)'==''">FTT</ModId>
+        <PackageProjectUrl>https://github.com/cvusmo/FFT</PackageProjectUrl>
+        <RepositoryUrl></RepositoryUrl>
+        <PackageTags>KSP2-mods</PackageTags>
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
