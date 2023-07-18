@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace FTT.Modules
+namespace FFT.Modules
 {
     public class SizesUI
     {
