@@ -15,6 +15,7 @@ If you're having troubles installing the mod, try [CKAN](https://github.com/KSP-
 -New Fuel line
 -VFX for tank cooling during launch
 -Emission effect when reentry heat is added
+-Antimatter Fuel Tanks when Antimatter is introduced
 
-##Thank you to LuxStice for ALL of the help making this mod!
+Thank you to LuxStice for ALL of the help making this mod!
 
