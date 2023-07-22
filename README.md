@@ -1,7 +1,7 @@
 # FFT
 Fancy Fuel Tanks
 
-## [0.1.0] - Added 3 Methalox Fuel Tanks, 3 Hydrogen Fuel Tanks, and 1 Xenon Fuel Tank
+## [0.1.1] - Added 3 Methalox Fuel Tanks, 3 Hydrogen Fuel Tanks, and 1 Xenon Fuel Tank
 
 If you're having troubles installing the mod, try [CKAN](https://github.com/KSP-CKAN/CKAN/releases)!
 
