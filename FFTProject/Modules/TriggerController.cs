@@ -13,6 +13,7 @@ public class TriggerController : MonoBehaviour
     private IsActiveVessel _isActiveVessel;
     private bool _wasActive;
     private bool _coolingVFXOFF = false;
+    public ParticleSystem _particleSystem;
     public bool IsActive { get; set; }
 
     private void Start()
@@ -23,6 +24,19 @@ public class TriggerController : MonoBehaviour
         _fuelResourceId = definitionDatabase.GetResourceIDFromName("Methalox"); // Replace "Fuel" with the actual name of your fuel resource.
         _animator = GetComponent<Animator>();
         _isActiveVessel = new IsActiveVessel();
+
+        Debug.Log("TriggerController has started.");
+    }
+    public void EnableEmission()
+    {
+        var emission = _particleSystem.emission;
+        emission.enabled = true;
+    }
+
+    public void DisableEmission()
+    {
+        var emission = _particleSystem.emission;
+        emission.enabled = false;
     }
 
     private void FixedUpdate()
@@ -36,9 +50,13 @@ public class TriggerController : MonoBehaviour
         if (_isActive && !_wasActive)
         {
             if (fuelLevel > 0.8f)
+            {
                 _animator.Play("CoolingVFX_ON");
+            }
             else
+            {
                 _animator.Play("CoolingVFX_LOOP");
+            }
 
             _coolingVFXOFF = false;
         }
