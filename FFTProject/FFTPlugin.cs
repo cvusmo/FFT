@@ -39,10 +39,7 @@ namespace FFT
             Logger = base.Logger;
             Logger.LogInfo("Loaded");
 
-            _gameInstance = GameManager.Instance.Game;
-            GameObject controllableObject = GameObject.Find("CV401");
-            TriggerController = controllableObject.AddComponent<TriggerController>();
-            _isActiveVessel = new IsActiveVessel();
+            _gameInstance = GameManager.Instance.Game; 
         }
         public void FixedUpdate()
         {
@@ -50,15 +47,29 @@ namespace FFT
 
             if (state == GameState.Launchpad || state == GameState.FlightView || state == GameState.Runway)
             {
-                TriggerController.IsActive = true;
-                Logger.LogInfo("TriggerController IsActive = True");
+                GameObject controllableObject = GameObject.Find("CV401");
+
+                if (controllableObject != null && controllableObject.GetComponent<TriggerController>() == null)
+                {
+                    TriggerController = controllableObject.AddComponent<TriggerController>();
+                }
+
+                if (TriggerController != null && _isActiveVessel.GetValueBool())
+                {
+                    TriggerController.IsActive = true;
+                    Logger.LogInfo("TriggerController IsActive = True");
+                }
             }
             else
             {
-                TriggerController.IsActive = false;
-                Logger.LogInfo("TriggerController IsActive = False");
+                if (TriggerController != null)
+                {
+                    TriggerController.IsActive = false;
+                    Logger.LogInfo("TriggerController IsActive = False");
+                }
             }
         }
+
         public override void OnPostInitialized() => base.OnPostInitialized();
     }
 }

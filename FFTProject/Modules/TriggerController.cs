@@ -6,32 +6,51 @@ using KSP.Sim.ResourceSystem;
 using UnityEngine;
 public class TriggerController : MonoBehaviour
 {
-    private Module_ResourceCapacities moduleResourceCapacities;
-    private TriggerVFXFromAnimation triggerVFX;
-    private ResourceDefinitionID fuelResourceId;
-    private Animator animator;
+    private Module_ResourceCapacities _moduleResourceCapacities;
+    private TriggerVFXFromAnimation _triggerVFX;
+    private ResourceDefinitionID _fuelResourceId;
+    private Animator _animator;
     private IsActiveVessel _isActiveVessel;
+    private bool _wasActive;
+    private bool _coolingVFXOFF = false;
     public bool IsActive { get; set; }
 
     private void Start()
     {
-        moduleResourceCapacities = GetComponent<Module_ResourceCapacities>();
-        triggerVFX = GetComponentInChildren<TriggerVFXFromAnimation>();
+        _moduleResourceCapacities = GetComponent<Module_ResourceCapacities>();
+        _triggerVFX = GetComponentInChildren<TriggerVFXFromAnimation>();
         ResourceDefinitionDatabase definitionDatabase = GameManager.Instance.Game.ResourceDefinitionDatabase;
-        fuelResourceId = definitionDatabase.GetResourceIDFromName("Methalox"); // Replace "Fuel" with the actual name of your fuel resource.
-        animator = GetComponent<Animator>();
+        _fuelResourceId = definitionDatabase.GetResourceIDFromName("Methalox"); // Replace "Fuel" with the actual name of your fuel resource.
+        _animator = GetComponent<Animator>();
         _isActiveVessel = new IsActiveVessel();
     }
 
     private void FixedUpdate()
     {
-        IResourceContainer fuelContainer = moduleResourceCapacities.OABPart.Containers[0];
-        float fuelLevel = (float)fuelContainer.GetResourceStoredUnits(fuelResourceId);
-        animator.SetFloat("FuelLevel", fuelLevel);
+        IResourceContainer fuelContainer = _moduleResourceCapacities.OABPart.Containers[0];
+        float fuelLevel = (float)fuelContainer.GetResourceStoredUnits(_fuelResourceId);
+        _animator.SetFloat("FuelLevel", fuelLevel);
 
-        IsActive = _isActiveVessel.GetValueBool();
+        bool _isActive = _isActiveVessel.GetValueBool();
 
-        if (!IsActive)
-            return;
+        if (_isActive && !_wasActive)
+        {
+            if (fuelLevel > 0.8f)
+                _animator.Play("CoolingVFX_ON");
+            else
+                _animator.Play("CoolingVFX_LOOP");
+
+            _coolingVFXOFF = false;
+        }
+        else if (!_isActive && _wasActive && !_coolingVFXOFF)
+        {
+            if (fuelLevel < 0.8f)
+            {
+                _animator.Play("CoolingVFX_OFF");
+                _coolingVFXOFF = true;
+            }
+        }
+
+        _wasActive = _isActive;
     }
 }
