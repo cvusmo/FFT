@@ -1,47 +1,37 @@
-﻿//CV401 (CorePartData, Module_Color, Module_Drag, Module_ResourceCapacities, Animator)
-//└── model()
-//└── CV - 401(mesh renderer)
-//└── Smoke(ParticleSystem, TriggerController, Module_ToggleCrossfeed, TriggerVFXFromAnimation)
-
-
-using BepInEx.Logging;
-using SpaceWarp;
+﻿using BepInEx.Logging;
 using FFT;
+using KSP.Messages.PropertyWatchers;
 using KSP.Animation;
 using KSP.Game;
-using KSP.Messages.PropertyWatchers;
 using KSP.Modules;
 using KSP.Sim.impl;
 using KSP.Sim.ResourceSystem;
 using UnityEngine;
+using System.Linq;
 
 public class TriggerController : MonoBehaviour
 {
-    private Module_ResourceCapacities _moduleResourceCapacities;
     private TriggerVFXFromAnimation _triggerVFX;
-    private ResourceDefinitionID _fuelResourceId;
     private Animator _animator;
-    public ParticleSystem _particleSystem;
+    private ParticleSystem _particleSystem;
     private IsActiveVessel _isActiveVessel;
-    public ViewController _viewController;
-    internal VesselComponent _vesselComponent;
     private GameObject _coolingVFX;
+    private VesselFuelLevelPropertyWatcher _fuelLevelWatcher;
+    private Module_ResourceCapacities _moduleResourceCapacities;
+    private ResourceDefinitionID _fuelResourceId;
+    private ResourceDataProvider _resourceDataProvider;
+
     private bool _wasActive;
-    private bool _coolingVFXON;
-    private bool _coolingVFXLOOP;
     private bool _coolingVFXOFF = false;
-    private string _activeVesselGuid = "";
+
     internal new static ManualLogSource Logger { get; set; }
     public bool IsActive { get; set; }
 
     private void Start()
     {
-        _moduleResourceCapacities = GetComponentInParent<Module_ResourceCapacities>();
-        if (_moduleResourceCapacities == null)
-        {
-            Logger.LogError("Module_ResourceCapacities not found in parent");
-            return;
-        }
+        Logger = FFTPlugin.Logger;
+
+        _resourceDataProvider = new ResourceDataProvider();
 
         _triggerVFX = GetComponent<TriggerVFXFromAnimation>();
         if (_triggerVFX == null)
@@ -56,6 +46,7 @@ public class TriggerController : MonoBehaviour
             Logger.LogError("CoolingVFX not found");
             return;
         }
+
         _particleSystem = _coolingVFX.GetComponent<ParticleSystem>();
         if (_particleSystem == null)
         {
@@ -63,24 +54,18 @@ public class TriggerController : MonoBehaviour
             return;
         }
 
-        ResourceDefinitionDatabase definitionDatabase = GameManager.Instance.Game.ResourceDefinitionDatabase;
-        _fuelResourceId = definitionDatabase.GetResourceIDFromName("Methalox"); // Replace "Fuel" with the actual fuel resource.
-        Logger.LogError("_fuelResourceId" + _fuelResourceId);
-
         _animator = GetComponentInParent<Animator>();
         if (_animator == null)
         {
-            Logger.LogError("Animator not found in parent GameObject" + _animator);
+            Logger.LogError("Animator not found in parent GameObject");
             return;
         }
 
         _isActiveVessel = new IsActiveVessel();
-
-        Logger = FFTPlugin.Logger;
+        _fuelLevelWatcher = new VesselFuelLevelPropertyWatcher();
 
         Logger.LogInfo("TriggerController has started.");
     }
-
 
     public void EnableEmission()
     {
@@ -102,36 +87,10 @@ public class TriggerController : MonoBehaviour
     {
         _particleSystem.Stop();
     }
+
     private void FixedUpdate()
     {
         GameState? state = FFTPlugin.Instance.GetGameState();
-
-        {
-            if (_moduleResourceCapacities == null)
-            {
-                _moduleResourceCapacities = GetComponentInParent<Module_ResourceCapacities>();
-                if (_moduleResourceCapacities == null)
-                {
-                    Logger.LogError("Module_ResourceCapacities not found in parent");
-                    return;
-                }
-            }
-
-            if (_animator == null)
-            {
-                _animator = GetComponentInParent<Animator>();
-                if (_animator == null)
-                {
-                    Logger.LogError("Animator not found in parent GameObject");
-                    return;
-                }
-            }
-        }
-        if (_moduleResourceCapacities == null || _moduleResourceCapacities.OABPart == null || _moduleResourceCapacities.OABPart.Containers == null)
-        {
-            Logger.LogError("_moduleResourceCapacities or _moduleResourceCapacities.OABPart or _moduleResourceCapacities.OABPart.Containers is null");
-            return;
-        }
 
         IResourceContainer fuelContainer = _moduleResourceCapacities.OABPart.Containers[0];
         Logger.LogInfo("fuelContainer: " + fuelContainer);
@@ -139,14 +98,23 @@ public class TriggerController : MonoBehaviour
         float fuelLevel = (float)fuelContainer.GetResourceStoredUnits(_fuelResourceId);
         _animator.SetFloat("FuelLevel", fuelLevel);
 
-        Logger.LogInfo("fuelLevel: " + fuelLevel);
-        Logger.LogInfo("_animator: " + _animator);
-        Logger.LogInfo("_fuelResourceId" + _fuelResourceId);
+        if (_animator == null)
+        {
+            _animator = GetComponentInParent<Animator>();
+            if (_animator == null)
+            {
+                Logger.LogError("Animator not found in parent GameObject");
+                return;
+            }
+        }
+
+        if (_fuelLevelWatcher != null)
+        {
+            fuelLevel = (float)(_fuelLevelWatcher.GetValueDouble() / 100.0);
+            _animator.SetFloat("FuelLevel", fuelLevel);
+        }
 
         bool _isActive = _isActiveVessel.GetValueBool();
-
-        Logger.LogInfo("_isActive: " + _isActive);
-        Logger.LogInfo("_wasActive: " + _wasActive);
 
         if (_isActive)
         {
@@ -157,17 +125,25 @@ public class TriggerController : MonoBehaviour
                 if (fuelLevel > 0.8f)
                 {
                     _animator.Play("CoolingVFX_ON");
-                    Logger.LogInfo("CoolingVFX_ON: " + _coolingVFXON);
-                }
-                else
-                {
-                    _animator.Play("CoolingVFX_LOOP");
-                    Logger.LogInfo("CoolingVFX_LOOP: " + _coolingVFXLOOP);
-                    StartParticleSystem();
+                    Logger.LogInfo("CoolingVFX_ON: ");
                 }
             }
+            else if (fuelLevel > 0.8f && !_animator.GetCurrentAnimatorStateInfo(0).IsName("CoolingVFX_LOOP"))
+            {
+                _animator.Play("CoolingVFX_LOOP");
+                Logger.LogInfo("CoolingVFX_LOOP: ");
+                StartParticleSystem();
+            }
+            else if (fuelLevel <= 0.8f && !_coolingVFXOFF && _animator.GetCurrentAnimatorStateInfo(0).IsName("CoolingVFX_LOOP"))
+            {
+                _animator.Play("CoolingVFX_OFF");
+                _coolingVFXOFF = true;
+                Logger.LogInfo("CoolingVFX_OFF: " + _coolingVFXOFF);
+                StopParticleSystem();
+                DisableEmission();
+            }
         }
-        else if (_wasActive && !_coolingVFXOFF && fuelLevel < 0.8f)
+        else if (_wasActive && !_coolingVFXOFF)
         {
             _animator.Play("CoolingVFX_OFF");
             _coolingVFXOFF = true;
@@ -178,6 +154,4 @@ public class TriggerController : MonoBehaviour
 
         _wasActive = _isActive;
     }
-
 }
-
