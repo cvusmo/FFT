@@ -1,11 +1,11 @@
 ﻿using BepInEx;
-using SpaceWarp;
-using KSP.Game;
-using KSP.Sim.impl;
 using BepInEx.Logging;
+using KSP.Game;
+using KSP.Messages.PropertyWatchers;
+using KSP.Sim.impl;
+using SpaceWarp;
 using SpaceWarp.API.Mods;
 using UnityEngine;
-using KSP.Messages.PropertyWatchers;
 
 namespace FFT
 {
@@ -22,7 +22,7 @@ namespace FFT
         private IsActiveVessel _isActiveVessel;
         internal GameState? _state;
         private GameObject CV401;
-        internal TriggerController TriggerController { get; private set; } 
+        internal TriggerController TriggerController { get; private set; }
         public static FFTPlugin Instance { get; set; }
 
         internal new static ManualLogSource Logger { get; set; }
@@ -32,13 +32,6 @@ namespace FFT
         {
             FFTPlugin.Path = this.PluginFolderPath;
         }
-
-        private void Start()
-        {
-            CV401 = GameObject.Find("CV401");
-            Logger.LogInfo("CV401 not found at Start");
-        }
-
         public override void OnInitialized()
         {
             base.OnInitialized();
@@ -50,29 +43,44 @@ namespace FFT
             _gameInstance = GameManager.Instance.Game;
             _isActiveVessel = new IsActiveVessel();
             _vesselComponent = new VesselComponent();
+            CV401 = GameObject.Find("CV401");
+
+            if (CV401 == null)
+            {
+                Logger.LogInfo("CV401 not found at initialization");
+            }
+            else
+            {
+                Logger.LogInfo("CV401 found at initialization");
+            }
+
             Logger.LogInfo("gameInstance" + _gameInstance);
             Logger.LogInfo("_isActiveVessel" + _isActiveVessel);
             Logger.LogInfo("_vesselComponent" + _vesselComponent);
         }
+
         public void Update()
         {
             _state = BaseSpaceWarpPlugin.Game?.GlobalGameState?.GetState();
 
             if (_state == GameState.Launchpad || _state == GameState.FlightView || _state == GameState.Runway)
             {
-                GameObject controllableObject = GameObject.Find("CV401");
-                if (controllableObject != null)
+                if (CV401 == null)
                 {
-                    Logger.LogInfo("CV401 found: " + controllableObject);
-                }
-                else
-                {
-                    Logger.LogInfo("CV401 not found at Update");
+                    CV401 = GameObject.Find("CV401");
+                    if (CV401 != null)
+                    {
+                        Logger.LogInfo("CV401 found: " + CV401);
+                    }
+                    else
+                    {
+                        Logger.LogInfo("CV401 not found");
+                    }
                 }
 
-                if (controllableObject != null && controllableObject.GetComponent<TriggerController>() == null)
+                if (CV401 != null && CV401.GetComponent<TriggerController>() == null)
                 {
-                    TriggerController = controllableObject.AddComponent<TriggerController>();
+                    TriggerController = CV401.AddComponent<TriggerController>();
                 }
 
                 if (TriggerController != null && _isActiveVessel.GetValueBool())
@@ -93,7 +101,7 @@ namespace FFT
         public GameState? GetGameState()
         {
             Logger.LogInfo("_state" + _state);
-            return _state; 
+            return _state;
         }
 
         public override void OnPostInitialized() => base.OnPostInitialized();
