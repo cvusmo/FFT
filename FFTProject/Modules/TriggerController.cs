@@ -25,6 +25,7 @@ public class TriggerController : MonoBehaviour
     private IsActiveVessel _isActiveVessel;
     public ViewController _viewController;
     internal VesselComponent _vesselComponent;
+    private GameObject _coolingVFX;
     private bool _wasActive;
     private bool _coolingVFXON;
     private bool _coolingVFXLOOP;
@@ -49,7 +50,13 @@ public class TriggerController : MonoBehaviour
             return;
         }
 
-        _particleSystem = GetComponent<ParticleSystem>();
+        _coolingVFX = GameObject.Find("CV401/CoolingVFX");
+        if (_coolingVFX == null)
+        {
+            Logger.LogError("CoolingVFX not found");
+            return;
+        }
+        _particleSystem = _coolingVFX.GetComponent<ParticleSystem>();
         if (_particleSystem == null)
         {
             Logger.LogError("ParticleSystem not found in same GameObject");
