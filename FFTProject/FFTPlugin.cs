@@ -20,6 +20,8 @@ namespace FFT
         internal GameInstance _gameInstance;
         internal VesselComponent _vesselComponent;
         private IsActiveVessel _isActiveVessel;
+        internal GameState? _state;
+        private GameObject CV401;
         internal TriggerController TriggerController { get; private set; } 
         public static FFTPlugin Instance { get; set; }
 
@@ -31,6 +33,12 @@ namespace FFT
             FFTPlugin.Path = this.PluginFolderPath;
         }
 
+        private void Start()
+        {
+            CV401 = GameObject.Find("CV401");
+            Logger.LogInfo("CV401 not found at Start");
+        }
+
         public override void OnInitialized()
         {
             base.OnInitialized();
@@ -39,15 +47,28 @@ namespace FFT
             Logger = base.Logger;
             Logger.LogInfo("Loaded");
 
-            _gameInstance = GameManager.Instance.Game; 
+            _gameInstance = GameManager.Instance.Game;
+            _isActiveVessel = new IsActiveVessel();
+            _vesselComponent = new VesselComponent();
+            Logger.LogInfo("gameInstance" + _gameInstance);
+            Logger.LogInfo("_isActiveVessel" + _isActiveVessel);
+            Logger.LogInfo("_vesselComponent" + _vesselComponent);
         }
-        public void FixedUpdate()
+        public void Update()
         {
-            GameState? state = BaseSpaceWarpPlugin.Game?.GlobalGameState?.GetState();
+            _state = BaseSpaceWarpPlugin.Game?.GlobalGameState?.GetState();
 
-            if (state == GameState.Launchpad || state == GameState.FlightView || state == GameState.Runway)
+            if (_state == GameState.Launchpad || _state == GameState.FlightView || _state == GameState.Runway)
             {
                 GameObject controllableObject = GameObject.Find("CV401");
+                if (controllableObject != null)
+                {
+                    Logger.LogInfo("CV401 found: " + controllableObject);
+                }
+                else
+                {
+                    Logger.LogInfo("CV401 not found at Update");
+                }
 
                 if (controllableObject != null && controllableObject.GetComponent<TriggerController>() == null)
                 {
@@ -68,6 +89,11 @@ namespace FFT
                     Logger.LogInfo("TriggerController IsActive = False");
                 }
             }
+        }
+        public GameState? GetGameState()
+        {
+            Logger.LogInfo("_state" + _state);
+            return _state; 
         }
 
         public override void OnPostInitialized() => base.OnPostInitialized();
