@@ -21,8 +21,29 @@ public class TriggerController : MonoBehaviour
     private GameObject CoolingVFX;
     private bool _wasActive;
     public bool _isActive;
-    public float FuelLevel { get; private set; }
     internal new static ManualLogSource Logger { get; set; }
+
+    public float FuelLevel
+    {
+        get
+        {
+            _vesselComponent.RefreshFuelPercentages();
+            double fuelPercentage = _vesselComponent.StageFuelPercentage;
+
+            if (fuelPercentage < 0)
+            {
+                Logger.LogError("Out of Fuel." + fuelPercentage);
+                return 0f;
+            }
+            else
+            {
+                float level = (float)fuelPercentage;
+                _animator.SetFloat("FuelLevel", level);
+                Logger.LogInfo("Fuel level: " + level);
+                return level;
+            }
+        }
+    }
 
     private void Start()
     {
@@ -105,30 +126,12 @@ public class TriggerController : MonoBehaviour
 
         Logger.LogInfo("ActiveSimVessel: " + Vehicle.ActiveSimVessel);
 
-        UpdateFuelLevel();
-
         _animator.SetBool("IsActive", _isActive);
         IsActive = _isActiveVessel.GetValueBool();
 
         if (_wasActive)
         {
             DisableCoolingEffects();
-        }
-    }
-    private void UpdateFuelLevel()
-    {
-        _vesselComponent.RefreshFuelPercentages();
-        double fuelPercentage = _vesselComponent.StageFuelPercentage;
-
-        if (fuelPercentage < 0)
-        {
-            Logger.LogError("Invalid active vessel or vessel with 0 fuel tanks.");
-        }
-        else
-        {
-            FuelLevel = (float)fuelPercentage;
-            _animator.SetFloat("FuelLevel", FuelLevel);
-            Logger.LogInfo("Fuel level: " + FuelLevel);
         }
     }
     private bool FuelLevelExceedsThreshold()
