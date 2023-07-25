@@ -43,16 +43,8 @@ namespace FFT
             _gameInstance = GameManager.Instance.Game;
             _isActiveVessel = new IsActiveVessel();
             _vesselComponent = new VesselComponent();
-            CV401 = GameObject.Find("CV401");
 
-            if (CV401 == null)
-            {
-                Logger.LogInfo("CV401 not found at initialization");
-            }
-            else
-            {
-                Logger.LogInfo("CV401 found at initialization");
-            }
+            //CV401 = GameObject.Find("CV401");
 
             Logger.LogInfo("gameInstance" + _gameInstance);
             Logger.LogInfo("_isActiveVessel" + _isActiveVessel);
@@ -78,9 +70,22 @@ namespace FFT
                     }
                 }
 
-                if (CV401 != null && CV401.GetComponent<TriggerController>() == null)
+                GameObject CoolingVFX = CV401.transform.Find("CoolingVFX")?.gameObject;
+
+                if (CoolingVFX != null)
                 {
-                    TriggerController = CV401.AddComponent<TriggerController>();
+                    if (CoolingVFX.GetComponent<TriggerController>() == null)
+                    {
+                        TriggerController = CoolingVFX.AddComponent<TriggerController>();
+                    }
+                    else
+                    {
+                        Logger.LogInfo("TriggerController already exists on CoolingVFX");
+                    }
+                }
+                else
+                {
+                    Logger.LogInfo("CoolingVFX not found");
                 }
 
                 if (TriggerController != null && _isActiveVessel.GetValueBool())

@@ -8,6 +8,7 @@ using KSP.Sim.impl;
 using KSP.Sim.ResourceSystem;
 using SpaceWarp.API.Game;
 using UnityEngine;
+using static KSP.Api.UIDataPropertyStrings.View;
 
 public class TriggerController : MonoBehaviour
 {
@@ -22,8 +23,8 @@ public class TriggerController : MonoBehaviour
     private ResourceDefinitionID _fuelResourceId;
     private ResourceDataProvider _resourceDataProvider;
     private bool _wasActive;
-    private bool _coolingVFXOFF = false;
     public bool _isActive;
+    public float FuelLevel { get; private set; }
 
     internal new static ManualLogSource Logger { get; set; }
     //public bool IsActive { get; set; }
@@ -31,18 +32,12 @@ public class TriggerController : MonoBehaviour
     private void Start()
     {
         Logger = FFTPlugin.Logger;
+        Logger.LogInfo("Attached to GameObject: " + gameObject.name);
 
         _triggerVFX = GetComponent<TriggerVFXFromAnimation>();
         if (_triggerVFX == null)
         {
             Logger.LogError("TriggerVFXFromAnimation not found in same GameObject");
-            return;
-        }
-
-        _coolingVFX = GameObject.Find("CV401/CoolingVFX");
-        if (_coolingVFX == null)
-        {
-            Logger.LogError("CoolingVFX not found");
             return;
         }
 
@@ -114,24 +109,25 @@ public class TriggerController : MonoBehaviour
             _wasActive = _isActive;
         }
     }
-
     private void FixedUpdate()
     {
         VesselComponent _vesselComponent = Vehicle.ActiveSimVessel;
         _vesselComponent.RefreshFuelPercentages();
 
-        IResourceContainer fuelContainer = _moduleResourceCapacities.OABPart.Containers[0];
-        Logger.LogInfo("fuelContainer: " + fuelContainer);
+        Logger.LogInfo("ActiveSimVessel: " + Vehicle.ActiveSimVessel);
 
-        UpdateFuelLevel(fuelContainer);
+        IResourceContainer _fuelContainer = _moduleResourceCapacities.OABPart.Containers[0];
+        Logger.LogInfo("_fuelContainer: " + _fuelContainer);
+
+        UpdateFuelLevel(_fuelContainer);
 
         IsActive = _isActiveVessel.GetValueBool();
 
         if (IsActive && _wasActive)
         {
-            HandleActiveVessel(fuelContainer);
+            HandleActiveVessel(_fuelContainer);
         }
-        else if (_wasActive && !_coolingVFXOFF)
+        else if (_wasActive)
         {
             DisableCoolingEffects();
         }
@@ -139,16 +135,21 @@ public class TriggerController : MonoBehaviour
 
     private void UpdateFuelLevel(IResourceContainer _fuelContainer)
     {
-        float fuelLevel = _fuelLevelWatcher != null ? (float)(_fuelLevelWatcher.GetValueDouble() / 100.0) : (float)_fuelContainer.GetResourceStoredUnits(_fuelResourceId);
-        _animator.SetFloat("FuelLevel", fuelLevel);
+        float storedFuel = (float)_fuelContainer.GetResourceStoredUnits(_fuelResourceId);
+        float capacityFuel = (float)_fuelContainer.GetResourceCapacityUnits(_fuelResourceId);
+        FuelLevel = _fuelLevelWatcher != null ? (float)(_fuelLevelWatcher.GetValueDouble() / 100.0) : storedFuel / capacityFuel;
+        _animator.SetFloat("FuelLevel", FuelLevel);
+        Logger.LogInfo("_fuelLevelWatcher" + _fuelLevelWatcher);
+        Logger.LogInfo("_fuelContainer: " + _fuelContainer);
     }
+
 
     private bool FuelLevelExceedsThreshold()
     {
-        return _animator.GetFloat("FuelLevel") > 0.8f;
+        return FuelLevel > 0.8f;
     }
 
-    private void HandleActiveVessel(IResourceContainer _fuelContainer)
+    private void HandleActiveVessel(IResourceContainer __fuelContainer)
     {
         if (FuelLevelExceedsThreshold() && !_animator.GetCurrentAnimatorStateInfo(0).IsName("CoolingVFX_LOOP"))
         {
@@ -156,22 +157,18 @@ public class TriggerController : MonoBehaviour
             StartParticleSystem();
             _animator.Play("CoolingVFX_LOOP");
             Logger.LogInfo("CoolingVFX_LOOP: ");
+            Logger.LogInfo("__fuelContainer: " + __fuelContainer);
         }
-        else if (!FuelLevelExceedsThreshold() && !_coolingVFXOFF && _animator.GetCurrentAnimatorStateInfo(0).IsName("CoolingVFX_LOOP"))
+        else if (!FuelLevelExceedsThreshold() && _animator.GetCurrentAnimatorStateInfo(0).IsName("CoolingVFX_LOOP"))
         {
             DisableCoolingEffects();
         }
     }
-
     private void DisableCoolingEffects()
     {
         _animator.Play("CoolingVFX_OFF");
-        _coolingVFXOFF = true;
         _triggerVFX.enabled = true;
         StopParticleSystem();
         DisableEmission();
-        Logger.LogInfo("CoolingVFX_OFF: " + _coolingVFXOFF);
     }
-
-
 }
