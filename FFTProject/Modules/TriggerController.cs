@@ -3,7 +3,6 @@ using FFT;
 using KSP.Animation;
 using KSP.Game;
 using KSP.Messages.PropertyWatchers;
-using KSP.Modules;
 using KSP.Sim.impl;
 using KSP.Sim.ResourceSystem;
 using KSP.Sim.State;
@@ -18,14 +17,13 @@ public class TriggerController : MonoBehaviour
     private ParticleSystem _particleSystem;
     private IsActiveVessel _isActiveVessel;
     private VesselComponent _vesselComponent;
-    private GameObject _coolingVFX;
-    private Module_ResourceCapacities _moduleResourceCapacities;
-    private StageFuelLevelPropertyWatcher _stageFuelLevelWatcher;
+    [SerializeField]
+    private GameObject CoolingVFX;
     private bool _wasActive;
     public bool _isActive;
     public float FuelLevel { get; private set; }
     internal new static ManualLogSource Logger { get; set; }
-    
+
     private void Start()
     {
         Logger = FFTPlugin.Logger;
@@ -38,7 +36,7 @@ public class TriggerController : MonoBehaviour
             return;
         }
 
-        _particleSystem = _coolingVFX.GetComponent<ParticleSystem>();
+        _particleSystem = CoolingVFX.GetComponent<ParticleSystem>();
         if (_particleSystem == null)
         {
             Logger.LogError("ParticleSystem not found in same GameObject");
@@ -54,8 +52,6 @@ public class TriggerController : MonoBehaviour
 
         _isActiveVessel = new IsActiveVessel();
         _vesselComponent = new VesselComponent();
-        _moduleResourceCapacities = new Module_ResourceCapacities();
-        _stageFuelLevelWatcher = new StageFuelLevelPropertyWatcher();
 
         Logger.LogInfo("TriggerController has started.");
     }
@@ -105,9 +101,7 @@ public class TriggerController : MonoBehaviour
     }
     private void FixedUpdate()
     {
-
-        VesselComponent _vesselComponent = Vehicle.ActiveSimVessel;
-        _vesselComponent.RefreshFuelPercentages();
+        _vesselComponent = Vehicle.ActiveSimVessel;
 
         Logger.LogInfo("ActiveSimVessel: " + Vehicle.ActiveSimVessel);
 
@@ -123,7 +117,8 @@ public class TriggerController : MonoBehaviour
     }
     private void UpdateFuelLevel()
     {
-        double fuelPercentage = _stageFuelLevelWatcher.GetValueDouble();
+        _vesselComponent.RefreshFuelPercentages();
+        double fuelPercentage = _vesselComponent.StageFuelPercentage;
 
         if (fuelPercentage < 0)
         {
@@ -131,7 +126,7 @@ public class TriggerController : MonoBehaviour
         }
         else
         {
-            FuelLevel = (float)fuelPercentage / 100.0f;
+            FuelLevel = (float)fuelPercentage;
             _animator.SetFloat("FuelLevel", FuelLevel);
             Logger.LogInfo("Fuel level: " + FuelLevel);
         }
