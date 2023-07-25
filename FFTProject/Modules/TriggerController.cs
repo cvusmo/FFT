@@ -6,6 +6,7 @@ using KSP.Messages.PropertyWatchers;
 using KSP.Modules;
 using KSP.Sim.impl;
 using KSP.Sim.ResourceSystem;
+using KSP.Sim.State;
 using SpaceWarp.API.Game;
 using UnityEngine;
 using static KSP.Api.UIDataPropertyStrings.View;
@@ -18,17 +19,13 @@ public class TriggerController : MonoBehaviour
     private IsActiveVessel _isActiveVessel;
     private VesselComponent _vesselComponent;
     private GameObject _coolingVFX;
-    private VesselFuelLevelPropertyWatcher _fuelLevelWatcher;
     private Module_ResourceCapacities _moduleResourceCapacities;
-    private ResourceDefinitionID _fuelResourceId;
-    private ResourceDataProvider _resourceDataProvider;
+    private StageFuelLevelPropertyWatcher _stageFuelLevelWatcher;
     private bool _wasActive;
     public bool _isActive;
     public float FuelLevel { get; private set; }
-
     internal new static ManualLogSource Logger { get; set; }
-    //public bool IsActive { get; set; }
-
+    
     private void Start()
     {
         Logger = FFTPlugin.Logger;
@@ -56,12 +53,9 @@ public class TriggerController : MonoBehaviour
         }
 
         _isActiveVessel = new IsActiveVessel();
-        _fuelLevelWatcher = new VesselFuelLevelPropertyWatcher();
-        _resourceDataProvider = new ResourceDataProvider();
         _vesselComponent = new VesselComponent();
         _moduleResourceCapacities = new Module_ResourceCapacities();
-        _fuelResourceId = new ResourceDefinitionID();
-
+        _stageFuelLevelWatcher = new StageFuelLevelPropertyWatcher();
 
         Logger.LogInfo("TriggerController has started.");
     }
@@ -111,39 +105,37 @@ public class TriggerController : MonoBehaviour
     }
     private void FixedUpdate()
     {
+
         VesselComponent _vesselComponent = Vehicle.ActiveSimVessel;
         _vesselComponent.RefreshFuelPercentages();
 
         Logger.LogInfo("ActiveSimVessel: " + Vehicle.ActiveSimVessel);
 
-        IResourceContainer _fuelContainer = _moduleResourceCapacities.OABPart.Containers[0];
-        Logger.LogInfo("_fuelContainer: " + _fuelContainer);
+        UpdateFuelLevel();
 
-        UpdateFuelLevel(_fuelContainer);
-
+        _animator.SetBool("IsActive", _isActive);
         IsActive = _isActiveVessel.GetValueBool();
 
-        if (IsActive && _wasActive)
-        {
-            HandleActiveVessel(_fuelContainer);
-        }
-        else if (_wasActive)
+        if (_wasActive)
         {
             DisableCoolingEffects();
         }
     }
-
-    private void UpdateFuelLevel(IResourceContainer _fuelContainer)
+    private void UpdateFuelLevel()
     {
-        float storedFuel = (float)_fuelContainer.GetResourceStoredUnits(_fuelResourceId);
-        float capacityFuel = (float)_fuelContainer.GetResourceCapacityUnits(_fuelResourceId);
-        FuelLevel = _fuelLevelWatcher != null ? (float)(_fuelLevelWatcher.GetValueDouble() / 100.0) : storedFuel / capacityFuel;
-        _animator.SetFloat("FuelLevel", FuelLevel);
-        Logger.LogInfo("_fuelLevelWatcher" + _fuelLevelWatcher);
-        Logger.LogInfo("_fuelContainer: " + _fuelContainer);
+        double fuelPercentage = _stageFuelLevelWatcher.GetValueDouble();
+
+        if (fuelPercentage < 0)
+        {
+            Logger.LogError("Invalid active vessel or vessel with 0 fuel tanks.");
+        }
+        else
+        {
+            FuelLevel = (float)fuelPercentage / 100.0f;
+            _animator.SetFloat("FuelLevel", FuelLevel);
+            Logger.LogInfo("Fuel level: " + FuelLevel);
+        }
     }
-
-
     private bool FuelLevelExceedsThreshold()
     {
         return FuelLevel > 0.8f;

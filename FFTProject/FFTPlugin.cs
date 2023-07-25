@@ -24,7 +24,6 @@ namespace FFT
         private GameObject CV401;
         internal TriggerController TriggerController { get; private set; }
         public static FFTPlugin Instance { get; set; }
-
         internal new static ManualLogSource Logger { get; set; }
         public static string Path { get; private set; }
 
@@ -43,8 +42,6 @@ namespace FFT
             _gameInstance = GameManager.Instance.Game;
             _isActiveVessel = new IsActiveVessel();
             _vesselComponent = new VesselComponent();
-
-            //CV401 = GameObject.Find("CV401");
 
             Logger.LogInfo("gameInstance" + _gameInstance);
             Logger.LogInfo("_isActiveVessel" + _isActiveVessel);
@@ -77,10 +74,7 @@ namespace FFT
                     if (CoolingVFX.GetComponent<TriggerController>() == null)
                     {
                         TriggerController = CoolingVFX.AddComponent<TriggerController>();
-                    }
-                    else
-                    {
-                        Logger.LogInfo("TriggerController already exists on CoolingVFX");
+                        Logger.LogInfo("TriggerController added to CoolingVFX");
                     }
                 }
                 else
