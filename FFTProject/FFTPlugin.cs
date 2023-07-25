@@ -1,5 +1,6 @@
 ﻿using BepInEx;
 using BepInEx.Logging;
+using FFT.Modules;
 using KSP.Game;
 using KSP.Messages.PropertyWatchers;
 using KSP.Sim.impl;
@@ -21,12 +22,16 @@ namespace FFT
         internal VesselComponent _vesselComponent;
         private IsActiveVessel _isActiveVessel;
         internal GameState? _state;
-        private GameObject CV401;
+        public FuelTanks fuelTanks;
         internal TriggerController TriggerController { get; private set; }
         public static FFTPlugin Instance { get; set; }
         internal new static ManualLogSource Logger { get; set; }
         public static string Path { get; private set; }
 
+        public void GetFuelTanks()
+        {
+            GameObject CV401 = fuelTanks.CV401;
+        }
         public override void OnPreInitialized()
         {
             FFTPlugin.Path = this.PluginFolderPath;
@@ -54,20 +59,13 @@ namespace FFT
 
             if (_state == GameState.Launchpad || _state == GameState.FlightView || _state == GameState.Runway)
             {
-                if (CV401 == null)
+                if (fuelTanks.CV401 == null)
                 {
-                    CV401 = GameObject.Find("CV401");
-                    if (CV401 != null)
-                    {
-                        Logger.LogInfo("CV401 found: " + CV401);
-                    }
-                    else
-                    {
-                        Logger.LogInfo("CV401 not found");
-                    }
+                    Logger.LogInfo("CV401 not assigned in inspector");
+                    return;
                 }
 
-                GameObject CoolingVFX = CV401.transform.Find("CoolingVFX")?.gameObject;
+                GameObject CoolingVFX = fuelTanks.CV401.transform.Find("CoolingVFX")?.gameObject;
 
                 if (CoolingVFX != null)
                 {
@@ -97,6 +95,7 @@ namespace FFT
                 }
             }
         }
+
         public GameState? GetGameState()
         {
             Logger.LogInfo("_state" + _state);
