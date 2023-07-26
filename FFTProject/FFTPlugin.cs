@@ -91,7 +91,6 @@ namespace FFT
 
                 if (Module_TriggerVFX != null && _isActiveVessel.GetValueBool())
                 {
-                    Module_TriggerVFX.IsActive = true;
                     Logger.LogInfo("Module_TriggerVFX IsActive = True");
                 }
             }
@@ -99,7 +98,6 @@ namespace FFT
             {
                 if (Module_TriggerVFX != null)
                 {
-                    Module_TriggerVFX.IsActive = false;
                     Logger.LogInfo("Module_TriggerVFX IsActive = False");
                 }
             }

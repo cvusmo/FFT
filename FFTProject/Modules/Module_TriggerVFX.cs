@@ -1,10 +1,8 @@
-﻿using KSP.Sim.Definitions;
-using UnityEngine;
-using KSP.Animation;
+﻿using KSP.Animation;
 using KSP.Messages.PropertyWatchers;
+using KSP.Sim.Definitions;
 using KSP.Sim.impl;
-using KSP.Sim.ResourceSystem;
-using SpaceWarp.API.Game;
+using UnityEngine;
 
 namespace FFT.Modules
 {
@@ -23,35 +21,18 @@ namespace FFT.Modules
         public IsActiveVessel _isActiveVessel;
         public VesselComponent _vesselComponent;
         public bool _wasActive;
+        private float _fuelLevel;
 
-        public float FuelLevel
-        {
-            get
-            {
-                _vesselComponent.RefreshFuelPercentages();
-                double fuelPercentage = _vesselComponent.StageFuelPercentage;
-
-                if (fuelPercentage < 0)
-                {
-                    FFTPlugin.Logger.LogError("Out of Fuel." + fuelPercentage);
-                    return 0f;
-                }
-                else
-                {
-                    float level = (float)fuelPercentage;
-                    animator.SetFloat("FuelLevel", level);
-                    FFTPlugin.Logger.LogInfo("Fuel level: " + level);
-                    return level;
-                }
-            }
-        }
         public override void OnInitialize()
         {
             base.OnInitialize();
 
             if (PartBackingMode == PartBackingModes.Flight)
             {
-                Awake();
+                if (CoolingVFX)
+                {
+                    Awake();
+                }
             }
         }
         public void Awake()
@@ -59,17 +40,36 @@ namespace FFT.Modules
             FFTPlugin.Logger.LogInfo("Attached to GameObject: " + gameObject.name);
 
             _triggerVFX = GetComponent<TriggerVFXFromAnimation>();
-            _particleSystem = CoolingVFX.GetComponent<ParticleSystem>();
-            Animator animator = GetComponentInParent<Animator>();
+
+            if (CoolingVFX != null)
+            {
+                _particleSystem = CoolingVFX.GetComponentInChildren<ParticleSystem>();
+                if (_particleSystem != null)
+                {
+                    FFTPlugin.Logger.LogInfo("Successfully retrieved ParticleSystem.");
+                }
+                else
+                {
+                    FFTPlugin.Logger.LogError("Could not find ParticleSystem on CoolingVFX.");
+                }
+            }
+            else
+            {
+                FFTPlugin.Logger.LogError("CoolingVFX GameObject is not assigned.");
+            }
+
+            animator = GetComponentInParent<Animator>();
             if (animator == null)
             {
                 FFTPlugin.Logger.LogError("Animator component not found in parents.");
             }
+
             _isActiveVessel = new IsActiveVessel();
             _vesselComponent = new VesselComponent();
 
-            FFTPlugin.Logger.LogInfo("TriggerController has started.");
+            FFTPlugin.Logger.LogInfo("Module_TriggerVFX has started.");
         }
+
         public void AddDataModules()
         {
             base.AddDataModules();
@@ -87,45 +87,63 @@ namespace FFT.Modules
                 foreach (var ResourceID in container)
                 {
                     count++;
-                    FillRatio = container.GetResourceFillRatio(ResourceID) / count;
+                    FillRatio += container.GetResourceFillRatio(ResourceID);
                 }
+            }
+
+            if (count != 0)
+            {
+                FillRatio /= count;
             }
 
             float opacity = _dataTriggerVFX.VFXOpacityCurve.Evaluate((float)FillRatio);
 
-            IsActive = opacity > 0;
+            _fuelLevel = opacity;
+            FFTPlugin.Logger.LogInfo("opacity: " + opacity);
+
+            animator.SetFloat("FuelLevel", _fuelLevel);
+            FFTPlugin.Logger.LogInfo("Fuel level: " + _fuelLevel);
+
+            if (_fuelLevel < 0)
+            {
+                FFTPlugin.Logger.LogError("Out of Fuel. Fuel level: " + _fuelLevel);
+            }
+
+            if (IsActive)
+            {
+                if (!FuelLevelExceedsThreshold())
+                {
+                    StopVFX();
+                }
+                else if (!animator.GetCurrentAnimatorStateInfo(0).IsName("CoolingVFX_LOOP"))
+                {
+                    StartVFX();
+                }
+            }
+            else
+            {
+                StopVFX();
+            }
         }
+
         public bool IsActive
         {
             get { return _isActiveVessel.GetValueBool(); }
-            set
-            {
-                bool active = _isActiveVessel.GetValueBool();
-                if (active)
-                {
-                    FFTPlugin.Logger.LogInfo("IsActive set to true");
-                    if (!_wasActive)
-                    {
-                        FFTPlugin.Logger.LogInfo("Was not previously active");
-                        if (FuelLevelExceedsThreshold())
-                        {
-                            FFTPlugin.Logger.LogInfo("Fuel level exceeds threshold");
-                            EnableEmission();
-                            _triggerVFX.enabled = true;
-                            StartParticleSystem();
-                            animator.Play("CoolingVFX_ON");
-                            FFTPlugin.Logger.LogInfo("CoolingVFX_ON: ");
-                        }
-                    }
-                }
-                else
-                {
-                    FFTPlugin.Logger.LogInfo("IsActive set to false");
-                    DisableEmission();
-                    _triggerVFX.enabled = false;
-                }
-                _wasActive = active;
-            }
+        }
+        private void StartVFX()
+        {
+            EnableEmission();
+            StartParticleSystem();
+            _triggerVFX.enabled = true;
+            animator.Play("CoolingVFX_ON");
+            FFTPlugin.Logger.LogInfo("CoolingVFX_ON");
+        }
+
+        private void StopVFX()
+        {
+            DisableEmission();
+            _triggerVFX.enabled = false;
+            StopParticleSystem();
         }
         public void EnableEmission()
         {
@@ -173,63 +191,9 @@ namespace FFT.Modules
                 FFTPlugin.Logger.LogError("_particleSystem is null in _particleSystem.Stop");
             }
         }
-        public void FixedUpdate()
-        {
-            _vesselComponent = Vehicle.ActiveSimVessel;
-
-            if (animator != null)
-            {
-                animator.SetBool("_isActive", _isActiveVessel.GetValueBool());
-            }
-            else
-            {
-                FFTPlugin.Logger.LogError("animator is null in FixedUpdate");
-                return;
-            }
-
-            if (_isActiveVessel != null)
-            {
-                FFTPlugin.Logger.LogInfo("_isActiveVessel.GetValueBool(): " + _isActiveVessel.GetValueBool());
-                IsActive = _isActiveVessel.GetValueBool();
-            }
-            else
-            {
-                FFTPlugin.Logger.LogError("_isActiveVessel is null in FixedUpdate");
-                return;
-            }
-
-            if (_wasActive && !_isActiveVessel.GetValueBool())
-            {
-                DisableCoolingEffects();
-            }
-
-            _wasActive = _isActiveVessel.GetValueBool();
-        }
         public bool FuelLevelExceedsThreshold()
         {
-            return FuelLevel > 0.8f;
-        }
-        public void HandleActiveVessel(IResourceContainer __fuelContainer)
-        {
-            if (FuelLevelExceedsThreshold() && !animator.GetCurrentAnimatorStateInfo(0).IsName("CoolingVFX_LOOP"))
-            {
-                _triggerVFX.enabled = true;
-                StartParticleSystem();
-                animator.Play("CoolingVFX_LOOP");
-                FFTPlugin.Logger.LogInfo("CoolingVFX_LOOP: ");
-                FFTPlugin.Logger.LogInfo("__fuelContainer: " + __fuelContainer);
-            }
-            else if (!FuelLevelExceedsThreshold() && animator.GetCurrentAnimatorStateInfo(0).IsName("CoolingVFX_LOOP"))
-            {
-                DisableCoolingEffects();
-            }
-        }
-        public void DisableCoolingEffects()
-        {
-            animator.Play("CoolingVFX_OFF");
-            _triggerVFX.enabled = true;
-            StopParticleSystem();
-            DisableEmission();
+            return _fuelLevel > 0.8f;
         }
     }
 }
