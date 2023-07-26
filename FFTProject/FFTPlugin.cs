@@ -22,7 +22,7 @@ namespace FFT
         internal VesselComponent _vesselComponent;
         private IsActiveVessel _isActiveVessel;
         internal GameState? _state;
-        public FuelTanks fuelTanks;
+        public FuelTankDefinitions fuelTankDefintions;
         public GameObject CV401;
         internal TriggerController TriggerController { get; private set; }
         public static FFTPlugin Instance { get; set; }
@@ -30,12 +30,16 @@ namespace FFT
         public static string Path { get; private set; }
         public void GetFuelTanks()
         {
-            CV401 = fuelTanks.CV401;
+            CV401 = fuelTankDefintions.GetFuelTank("CV401");
         }
         void Awake()
         {
-            fuelTanks = FindObjectOfType<FuelTanks>();
+            fuelTankDefintions = FindObjectOfType<FuelTankDefinitions>();
             GetFuelTanks();
+            if (CV401 == null)
+            {
+                Logger.LogInfo("CV401 not found in FuelTanks.");
+            }
         }
         public override void OnPreInitialized()
         {
@@ -64,13 +68,13 @@ namespace FFT
 
             if (_state == GameState.Launchpad || _state == GameState.FlightView || _state == GameState.Runway)
             {
-                if (fuelTanks.CV401 == null)
+                if (CV401 == null)
                 {
-                    Logger.LogInfo("CV401 not assigned in inspector");
+                    Logger.LogInfo("CV401 not found in FuelTanks.");
                     return;
                 }
 
-                GameObject CoolingVFX = fuelTanks.CV401.transform.Find("CoolingVFX")?.gameObject;
+                GameObject CoolingVFX = CV401.transform.Find("CoolingVFX")?.gameObject;
 
                 if (CoolingVFX != null)
                 {
