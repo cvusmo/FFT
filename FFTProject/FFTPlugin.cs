@@ -24,7 +24,7 @@ namespace FFT
         internal GameState? _state;
         public FuelTankDefinitions fuelTankDefintions;
         public GameObject CV401;
-        internal TriggerController TriggerController { get; private set; }
+        internal Module_TriggerVFX Module_TriggerVFX { get; private set; }
         public static FFTPlugin Instance { get; set; }
         internal new static ManualLogSource Logger { get; set; }
         public static string Path { get; private set; }
@@ -78,10 +78,10 @@ namespace FFT
 
                 if (CoolingVFX != null)
                 {
-                    if (CoolingVFX.GetComponent<TriggerController>() == null)
+                    if (CoolingVFX.GetComponent<Module_TriggerVFX>() == null)
                     {
-                        TriggerController = CoolingVFX.AddComponent<TriggerController>();
-                        Logger.LogInfo("TriggerController added to CoolingVFX");
+                        Module_TriggerVFX = CoolingVFX.AddComponent<Module_TriggerVFX>();
+                        Logger.LogInfo("Module_TriggerVFX added to CoolingVFX");
                     }
                 }
                 else
@@ -89,18 +89,18 @@ namespace FFT
                     Logger.LogInfo("CoolingVFX not found");
                 }
 
-                if (TriggerController != null && _isActiveVessel.GetValueBool())
+                if (Module_TriggerVFX != null && _isActiveVessel.GetValueBool())
                 {
-                    TriggerController.IsActive = true;
-                    Logger.LogInfo("TriggerController IsActive = True");
+                    Module_TriggerVFX.IsActive = true;
+                    Logger.LogInfo("Module_TriggerVFX IsActive = True");
                 }
             }
             else
             {
-                if (TriggerController != null)
+                if (Module_TriggerVFX != null)
                 {
-                    TriggerController.IsActive = false;
-                    Logger.LogInfo("TriggerController IsActive = False");
+                    Module_TriggerVFX.IsActive = false;
+                    Logger.LogInfo("Module_TriggerVFX IsActive = False");
                 }
             }
         }
