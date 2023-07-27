@@ -3,10 +3,11 @@ using KSP.Messages.PropertyWatchers;
 using KSP.Sim.Definitions;
 using KSP.Sim.impl;
 using UnityEngine;
+using VFX;
 
 namespace FFT.Modules
 {
-    internal class Module_TriggerVFX : PartBehaviourModule
+    public class Module_TriggerVFX : PartBehaviourModule
     {
         public override Type PartComponentModuleType => typeof(PartComponentModule_TriggerVFX);
 
@@ -22,7 +23,7 @@ namespace FFT.Modules
         public VesselComponent _vesselComponent;
         public bool _wasActive;
         private float _fuelLevel;
-
+        public bool IsActive => _isActiveVessel.GetValueBool();
         public override void OnInitialize()
         {
             base.OnInitialize();
@@ -69,8 +70,7 @@ namespace FFT.Modules
 
             FFTPlugin.Logger.LogInfo("Module_TriggerVFX has started.");
         }
-
-        public void AddDataModules()
+        public override void AddDataModules()
         {
             base.AddDataModules();
             this._dataTriggerVFX ??= new Data_TriggerVFX();
@@ -79,24 +79,24 @@ namespace FFT.Modules
         public override void OnModuleFixedUpdate(float fixedDeltaTime)
         {
             base.OnModuleFixedUpdate(fixedDeltaTime);
-            double FillRatio = 0;
+            double fillRatioSum = 0;
             int count = 0;
 
             foreach (var container in part.Model.Containers)
             {
-                foreach (var ResourceID in container)
+                foreach (var resourceID in container)
                 {
+                    FFTPlugin.Logger.LogInfo("ResourceID Before: " + resourceID);
+                    FFTPlugin.Logger.LogInfo("opacity Before: " + count);
                     count++;
-                    FillRatio += container.GetResourceFillRatio(ResourceID);
+                    fillRatioSum += container.GetResourceFillRatio(resourceID);
+                    FFTPlugin.Logger.LogInfo("ResourceID After: " + resourceID);
+                    FFTPlugin.Logger.LogInfo("opacity After: " + count);
                 }
             }
 
-            if (count != 0)
-            {
-                FillRatio /= count;
-            }
-
-            float opacity = _dataTriggerVFX.VFXOpacityCurve.Evaluate((float)FillRatio);
+            double fillRatioAverage = fillRatioSum / count;
+            float opacity = _dataTriggerVFX.VFXOpacityCurve.Evaluate((float)fillRatioAverage);
 
             _fuelLevel = opacity;
             FFTPlugin.Logger.LogInfo("opacity: " + opacity);
@@ -104,96 +104,116 @@ namespace FFT.Modules
             animator.SetFloat("FuelLevel", _fuelLevel);
             FFTPlugin.Logger.LogInfo("Fuel level: " + _fuelLevel);
 
-            if (_fuelLevel < 0)
-            {
-                FFTPlugin.Logger.LogError("Out of Fuel. Fuel level: " + _fuelLevel);
-            }
-
             if (IsActive)
             {
-                if (!FuelLevelExceedsThreshold())
+                if (FuelLevelExceedsThreshold())
                 {
+                    if (_particleSystem.isPlaying)
+                    {
+                        FFTPlugin.Logger.LogInfo("Looping VFX. FuelLevel: " + _fuelLevel);
+                        LoopVFX();
+                    }
+                    else // If particle system is not playing, start the particle system
+                    {
+                        FFTPlugin.Logger.LogInfo("Starting VFX. FuelLevel: " + _fuelLevel);
+                        StartVFX();
+                    }
+                }
+                else
+                {
+                    FFTPlugin.Logger.LogInfo("Stopping VFX. FuelLevel: " + _fuelLevel);
                     StopVFX();
                 }
-                else if (!animator.GetCurrentAnimatorStateInfo(0).IsName("CoolingVFX_LOOP"))
-                {
-                    StartVFX();
-                }
             }
-            else
-            {
-                StopVFX();
-            }
-        }
-
-        public bool IsActive
-        {
-            get { return _isActiveVessel.GetValueBool(); }
         }
         private void StartVFX()
         {
+            StartParticleSystem();
+            FFTPlugin.Logger.LogInfo("Successfully started VFX");
+        }
+
+        private void LoopVFX()
+        {
+            FFTPlugin.Logger.LogInfo("LoopVFX FuelLevel: " + _fuelLevel);
             EnableEmission();
             StartParticleSystem();
             _triggerVFX.enabled = true;
-            animator.Play("CoolingVFX_ON");
-            FFTPlugin.Logger.LogInfo("CoolingVFX_ON");
+            animator.Play("CoolingVFX_LOOP");
+            FFTPlugin.Logger.LogInfo("Successfully started LoopVFX");
         }
 
         private void StopVFX()
         {
-            DisableEmission();
-            _triggerVFX.enabled = false;
             StopParticleSystem();
+            FFTPlugin.Logger.LogInfo("Successfully stopped VFX");
+            FFTPlugin.Logger.LogInfo("StopVFX FuelLevel: " + _fuelLevel);
         }
+
         public void EnableEmission()
         {
             if (_particleSystem != null)
             {
                 var emission = _particleSystem.emission;
                 emission.enabled = true;
+                FFTPlugin.Logger.LogInfo("Emission enabled");
             }
             else
             {
                 FFTPlugin.Logger.LogError("_particleSystem is null in EnableEmission");
             }
         }
+
         public void DisableEmission()
         {
             if (_particleSystem != null)
             {
                 var emission = _particleSystem.emission;
                 emission.enabled = false;
+                FFTPlugin.Logger.LogInfo("Emission disabled");
             }
             else
             {
                 FFTPlugin.Logger.LogError("_particleSystem is null in DisableEmission");
             }
         }
+
         public void StartParticleSystem()
         {
             if (_particleSystem != null)
             {
                 _particleSystem.Play();
+                EnableEmission();
+                animator.Play("CoolingVFX_OFF");
+                _triggerVFX.enabled = true;
+                FFTPlugin.Logger.LogInfo("Particle system started");
             }
             else
             {
-                FFTPlugin.Logger.LogError("_particleSystem is null in _particleSystem.Play");
+                FFTPlugin.Logger.LogError("_particleSystem is null in StartParticleSystem");
             }
         }
+
         public void StopParticleSystem()
         {
             if (_particleSystem != null)
             {
                 _particleSystem.Stop();
+                FFTPlugin.Logger.LogInfo("Particle system stopped");
             }
             else
             {
-                FFTPlugin.Logger.LogError("_particleSystem is null in _particleSystem.Stop");
+                FFTPlugin.Logger.LogError("_particleSystem is null in StopParticleSystem");
             }
         }
+
         public bool FuelLevelExceedsThreshold()
         {
-            return _fuelLevel > 0.8f;
+            if (_fuelLevel < 0.8f)
+            {
+                return false;
+            } 
+             return true;
+            
         }
     }
 }

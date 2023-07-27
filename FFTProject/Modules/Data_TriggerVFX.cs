@@ -7,7 +7,7 @@ using UnityEngine;
 namespace FFT.Modules
 {
     [Serializable]
-    internal class Data_TriggerVFX : ModuleData
+    public class Data_TriggerVFX : ModuleData
     {
         public override Type ModuleType => typeof(Module_TriggerVFX);
 
