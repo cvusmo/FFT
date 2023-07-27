@@ -5,6 +5,7 @@ using KSP.Sim.Definitions;
 using KSP.Sim.impl;
 using KSP.UI;
 using UnityEngine;
+using VFX;
 
 namespace FFT.Modules
 {
@@ -19,6 +20,7 @@ namespace FFT.Modules
         [SerializeField]
 
         public TriggerVFXFromAnimation _triggerVFX;
+        public DynamicGravityForVFX _gravityForVFX;
         public Animator animator;
         public ParticleSystem _particleSystem;
         public IsActiveVessel _isActiveVessel;
@@ -27,7 +29,6 @@ namespace FFT.Modules
         private float _fuelLevel;
         public GameState _gameState { get; private set; }
         public bool IsActive => _isActiveVessel.GetValueBool();
-
         public override void OnInitialize()
         {
             base.OnInitialize();
@@ -116,36 +117,30 @@ namespace FFT.Modules
                 }
                 else if (!animator.GetCurrentAnimatorStateInfo(0).IsName("CoolingVFX_LOOP"))
                 {
-                    StartVFX();
-                    _triggerVFX.enabled = true;
+                    StartVFX();                    
                     FFTPlugin.Logger.LogInfo("_triggerVFX: " + _triggerVFX);
-                }
+                } 
             }
             else
             {
                 StopVFX();
             }
         }
-
         private void StartVFX()
         {
-            FFTPlugin.Logger.LogInfo("StopVFX FuelLevel: " + _fuelLevel);
+            FFTPlugin.Logger.LogInfo("StartVFX FuelLevel: " + _fuelLevel);
             EnableEmission();
-            FFTPlugin.Logger.LogInfo("EnableEmission");
             StartParticleSystem();
-            FFTPlugin.Logger.LogInfo("StartParticleSystem"); 
-            animator.Play("CoolingVFX_ON");
-            FFTPlugin.Logger.LogInfo("CoolingVFX_ON: " + animator);
+            _triggerVFX.enabled = true;
+            _gravityForVFX.enabled = true;
+            FFTPlugin.Logger.LogInfo("StartParticleSystem & FL: " + _fuelLevel); 
         }
-
         private void StopVFX()
         {
             FFTPlugin.Logger.LogInfo("StopVFX FuelLevel: " + _fuelLevel);
             StopParticleSystem();
-            animator.Play("CoolingVFX_OFF");
-            FFTPlugin.Logger.LogInfo("Successfully played CoolingVFX_OFF.");
+            FFTPlugin.Logger.LogInfo("StopParticleSystem FuelLevel: " + _fuelLevel);
         }
-
         public void EnableEmission()
         {
             if (_particleSystem != null)
@@ -174,6 +169,7 @@ namespace FFT.Modules
         {
             if (_particleSystem != null)
             {
+                EnableEmission();
                 _particleSystem.Play();
             }
             else
@@ -195,12 +191,7 @@ namespace FFT.Modules
         }
         public bool FuelLevelExceedsThreshold()
         {
-            if (_fuelLevel < 0.8f)
-            {
-                return false;
-            }
-            return true;
-
+            return _fuelLevel > 0.8f;
         }
     }
 }
