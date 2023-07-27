@@ -30,6 +30,8 @@
     <ItemGroup>
       <Reference Include="Assembly-CSharp">
         <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program 2\KSP2_x64_Data\Managed\Assembly-CSharp.dll</HintPath>
+        <Publicize>true</Publicize>
+        <Private>false</Private>
       </Reference>
     </ItemGroup>
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
