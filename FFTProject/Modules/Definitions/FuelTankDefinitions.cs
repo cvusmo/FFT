@@ -1,19 +1,29 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using FFT.Modules; 
 
 public class FuelTankDefinitions : MonoBehaviour
 {
     [SerializeField]
-    private List<GameObject> fuelTankDefintions;
+    public List<GameObject> fuelTankDefintions;
 
-    private Dictionary<string, GameObject> fuelTanksDict = new Dictionary<string, GameObject>();
-    private void Awake()
+    public Dictionary<string, GameObject> fuelTanksDict = new Dictionary<string, GameObject>();
+    public bool isInitialized = false;
+    public void PopulateFuelTanks(Data_FuelTanks data)
     {
-        foreach (var tank in fuelTankDefintions)
-        {
-            fuelTanksDict[tank.name] = tank;
-        }
+        if (isInitialized) return;
+
+        fuelTanksDict["CV401"] = data.CV401;
+        fuelTanksDict["CV411"] = data.CV411;
+        fuelTanksDict["CV421"] = data.CV421;
+        fuelTanksDict["SP701"] = data.SP701;
+        fuelTanksDict["SR812"] = data.SR812;
+        fuelTanksDict["SR812A"] = data.SR812A;
+        fuelTanksDict["SR813"] = data.SR813;
+
+        isInitialized = true;
     }
+
     public GameObject GetFuelTank(string tankName)
     {
         if (fuelTanksDict.TryGetValue(tankName, out var tank))
