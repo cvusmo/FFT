@@ -3,7 +3,6 @@ using KSP.Game;
 using KSP.Messages.PropertyWatchers;
 using KSP.Sim.Definitions;
 using KSP.Sim.impl;
-using KSP.UI;
 using UnityEngine;
 using VFX;
 
@@ -19,7 +18,7 @@ namespace FFT.Modules
         public Data_FuelTanks _dataFuelTanks;
         [SerializeField]
         public GameObject CoolingVFX;
-        
+
         public TriggerVFXFromAnimation _triggerVFX;
         public DynamicGravityForVFX _gravityForVFX;
         public Animator animator;
@@ -27,7 +26,7 @@ namespace FFT.Modules
         public bool _wasActive;
         private float _fuelLevel;
         public GameState _gameState { get; private set; }
-        public bool IsActive => FFTPlugin.Instance._isActiveVessel.GetValueBool();
+        public override bool IsActive => FFTPlugin.Instance._isActiveVessel.GetValueBool();
         public override void OnInitialize()
         {
             base.OnInitialize();
@@ -36,7 +35,7 @@ namespace FFT.Modules
             {
                 if (CoolingVFX)
                 {
-                    Awake();   
+                    Awake();
                 }
             }
         }
@@ -49,7 +48,7 @@ namespace FFT.Modules
                 _particleSystem = CoolingVFX.GetComponentInChildren<ParticleSystem>();
                 if (_particleSystem != null)
                 {
-                    FFTPlugin.Logger.LogInfo("Successfully retrieved ParticleSystem.");
+                    FFTPlugin.Logger.LogInfo("Successfully retrieved ParticleSystem on CoolingVFX.");
                 }
                 else
                 {
@@ -108,26 +107,26 @@ namespace FFT.Modules
                 }
                 else if (!animator.GetCurrentAnimatorStateInfo(0).IsName("CoolingVFX_LOOP"))
                 {
-                    StartVFX();                    
-                } 
+                    StartVFX();
+                }
             }
             else
             {
                 StopVFX();
             }
         }
-        private void StartVFX()
+        internal void StartVFX()
         {
             EnableEmission();
-            StartParticleSystem();
+            _particleSystem.Play();
             _triggerVFX.enabled = true;
             _gravityForVFX.enabled = true;
         }
-        private void StopVFX()
+        internal void StopVFX()
         {
-            StopParticleSystem();
+            _particleSystem.Stop();
         }
-        public void EnableEmission()
+        internal void EnableEmission()
         {
             if (_particleSystem != null)
             {
@@ -135,7 +134,7 @@ namespace FFT.Modules
                 emission.enabled = true;
             }
         }
-        public void DisableEmission()
+        internal void DisableEmission()
         {
             if (_particleSystem != null)
             {
@@ -143,23 +142,7 @@ namespace FFT.Modules
                 emission.enabled = false;
             }
         }
-        public void StartParticleSystem()
-        {
-            if (_particleSystem != null)
-            {
-                EnableEmission();
-                _particleSystem.Play();
-            }
-        }
-        public void StopParticleSystem()
-        {
-            if (_particleSystem != null)
-            {
-                 DisableEmission();
-                _particleSystem.Stop();    
-            }
-        }
-        public bool FuelLevelExceedsThreshold()
+        internal bool FuelLevelExceedsThreshold()
         {
             return _fuelLevel > 0.8f;
         }
