@@ -1,8 +1,6 @@
-﻿using KSP.Animation;
-using KSP.Game;
-using KSP.Messages.PropertyWatchers;
+﻿using FFT.Modules.Core;
+using KSP.Animation;
 using KSP.Sim.Definitions;
-using KSP.Sim.impl;
 using UnityEngine;
 using VFX;
 
@@ -13,26 +11,32 @@ namespace FFT.Modules
         public override Type PartComponentModuleType => typeof(PartComponentModule_VentValve);
 
         [SerializeField]
-        public Data_VentValve _dataVentValve;
+        public Data_VentValve DataVentValve;
         [SerializeField]
-        public Data_ValveParts _dataValveParts;
+        public Data_ValveParts DataValveParts;
         [SerializeField]
         public GameObject VentValveVFX;
 
-        public TriggerVFXFromAnimation _triggerVFX;
-        public DynamicGravityForVFX _gravityForVFX;
-        public Animator animator;
-        public ParticleSystem _particleSystem;
-        internal float _ASLValve;
-        internal float _AGLValve;
-        public GameState _gameState { get; private set; }
-        public VentValveDefinitions _ventValveDefinitions { get; private set; }
-        public TelemetryComponent _telemetryComponent { get; private set; }
+        public TriggerVFXFromAnimation TriggerVFX;
+        public DynamicGravityForVFX GravityForVFX;
+        public Animator Animator;
+        public ParticleSystem ParticleSystem;
+        internal float ASLValve;
+        internal float AGLValve;
+        internal bool ActivateModuleVentValve = false;
 
+        public VesselDataModule _vesselDataModule;
+        public VentValveDefinitions VentValveDefinitions { get; private set; }
         public override bool IsActive => FFTPlugin.Instance._isActiveVessel.GetValueBool();
+
+        public object RefreshVesselData { get; private set; }
+
         public override void OnInitialize()
         {
             base.OnInitialize();
+
+            InitializeDataEntries();
+            AddDataModules();
 
             if (PartBackingMode == PartBackingModes.Flight)
             {
@@ -44,16 +48,86 @@ namespace FFT.Modules
         }
         public void Awake()
         {
-            FFTPlugin.Logger.LogInfo("Attached to GameObject: " + gameObject.name);
+            AssignVentValveDefinitions();
+            AssignParticleSystem();
+            AssignComponents();
+            FFTPlugin.Logger.LogInfo("Module_VentValve has started.");
+        }
+        public override void AddDataModules()
+        {
+            base.AddDataModules();
 
-            _ventValveDefinitions = GetComponentInParent<VentValveDefinitions>();
+            if (this.DataVentValve == null)
+            {
+                this.DataVentValve = new Data_VentValve();
+                this.DataModules.TryAddUnique<Data_VentValve>(this.DataVentValve, out this.DataVentValve);
+            }
+        }
+        public override void OnModuleFixedUpdate(float fixedDeltaTime)
+        {
+            base.OnModuleFixedUpdate(fixedDeltaTime);
 
+            _vesselDataModule.altitudeAgl.RefreshData();
+            _vesselDataModule.altitudeAsl.RefreshData();
+
+            ASLValve = (float)_vesselDataModule.altitudeAsl.altitudeAsl;
+            AGLValve = (float)_vesselDataModule.altitudeAgl.altitudeAgl;
+
+            float aslCurve = DataVentValve.VFXASLCurve.Evaluate(ASLValve);
+            float aglCurve = DataVentValve.VFXAGLCurve.Evaluate(AGLValve);
+            Animator.SetFloat("ASLValve", aslCurve);
+            Animator.SetFloat("AGLValve", aglCurve);
+
+            if (IsActive)
+            {
+                if (ASLValve > 1000 || AGLValve > 1000)
+                {
+                    StartVFX();
+                }
+                else if (ASLValve > 0 || AGLValve > 0)
+                {
+                    StopVFX();
+                }
+            }
+        }
+        internal void StartVFX()
+        {
+            EnableEmission();
+            ParticleSystem.Play();
+            TriggerVFX.enabled = true;
+            GravityForVFX.enabled = true;
+        }
+        internal void StopVFX()
+        {
+            DisableEmission();
+            ParticleSystem.Stop();
+        }
+        internal void EnableEmission()
+        {
+            if (ParticleSystem != null)
+            {
+                var emission = ParticleSystem.emission;
+                emission.enabled = true;
+            }
+        }
+        internal void DisableEmission()
+        {
+            if (ParticleSystem != null)
+            {
+                var emission = ParticleSystem.emission;
+                emission.enabled = false;
+            }
+        }
+        internal void AssignVentValveDefinitions()
+        {
+            VentValveDefinitions = GetComponentInParent<VentValveDefinitions>();
+        }
+        internal void AssignParticleSystem()
+        {
             if (VentValveVFX != null)
             {
-                _particleSystem = VentValveVFX.GetComponent<ParticleSystem>();
-                FFTPlugin.Logger.LogError("ParticleSystem assigned.");
-
-                if (_particleSystem != null)
+                ParticleSystem = VentValveVFX.GetComponent<ParticleSystem>();
+                if (ParticleSystem != null)
                 {
                     FFTPlugin.Logger.LogInfo("Successfully retrieved ParticleSystem for VentValve.");
                 }
@@ -66,110 +140,24 @@ namespace FFT.Modules
             {
                 FFTPlugin.Logger.LogError("VentValveVFX GameObject is not assigned.");
             }
-
-            float aslCurve = _dataVentValve.VFXAGLCurve.Evaluate((float)_ASLValve);
-            float aglCurve = _dataVentValve.VFXAGLCurve.Evaluate((float)_AGLValve);           
-
-            _ASLValve = aslCurve;
-            _AGLValve = aglCurve;
-
-            animator.SetFloat("ASL", _ASLValve);
-            animator.SetFloat("AGL", _AGLValve);
-
-
-            FFTPlugin.Instance._isActiveVessel = new IsActiveVessel();
-            FFTPlugin.Instance._vesselComponent = new VesselComponent();
-            FFTPlugin.Instance._telemetryComponent = new TelemetryComponent();
-            FFTPlugin.Logger.LogInfo("Module_VentValve has started.");
         }
-        public override void AddDataModules()
+        internal void AssignComponents()
         {
-            base.AddDataModules();
-
-            if (this._dataVentValve == null)
-            {
-                this._dataVentValve = new Data_VentValve();
-                this.DataModules.TryAddUnique<Data_VentValve>(this._dataVentValve, out this._dataVentValve);
-            }
+            TriggerVFX = GetComponent<TriggerVFXFromAnimation>();
+            GravityForVFX = GetComponent<DynamicGravityForVFX>();
+            Animator = GetComponent<Animator>();
         }
-        public override void OnModuleFixedUpdate(float fixedDeltaTime)
+        internal void InitializeDataEntries()
         {
-            base.OnModuleFixedUpdate(fixedDeltaTime);
-
-            double AltitudeFromSeaLevel = _telemetryComponent.AltitudeFromSeaLevel;
-            double AltitudeFromTerrain = _telemetryComponent.AltitudeFromTerrain;
-            int count = 1000;
-
-            if (AltitudeFromSeaLevel > 1000 || AltitudeFromTerrain > 1000)
-            {
-                StopVFX();
-                return;
-            }
-
-            double altitudeSealLevel = AltitudeFromSeaLevel / count;
-            double altitudeTerrain = AltitudeFromTerrain / count;
-
-            float ASL = _dataVentValve.VFXASLCurve.Evaluate((float)altitudeSealLevel);
-            float AGL = _dataVentValve.VFXAGLCurve.Evaluate((float)altitudeTerrain);
-            
-            _ASLValve = ASL;
-            animator.SetFloat("ASLValve", _ASLValve);
-
-            _AGLValve = AGL;
-            animator.SetFloat("AGLValve", _AGLValve);
-
-            if (_ASLValve < 0 || _AGLValve < 0)
-            {
-                FFTPlugin.Logger.LogError("_ASLValve closed: " + _ASLValve);
-                FFTPlugin.Logger.LogError("_AGLValve closed: " + _AGLValve);
-            }
-
-            if (IsActive)
-            {
-                if (!MaxAltitude())
-                {
-                    StopVFX();
-                }
-                else if (!animator.GetCurrentAnimatorStateInfo(0).IsName("VentValve_LOOP"))
-                {
-                    StartVFX();
-                }
-            }
-            else
-            {
-                StopVFX();
-            }
+            DataValveParts = new Data_ValveParts();
+            DataVentValve = new Data_VentValve();
+            DataVentValve.VFXASLCurve = new AnimationCurve(new Keyframe(0, 0), new Keyframe(1, 1));
+            DataVentValve.VFXAGLCurve = new AnimationCurve(new Keyframe(0, 0), new Keyframe(1, 1));;
+            _vesselDataModule = new VesselDataModule();
         }
-        internal void StartVFX()
+        public void Activate()
         {
-            EnableEmission();
-            _particleSystem.Play();
-            _triggerVFX.enabled = true;
-            _gravityForVFX.enabled = true;
-        }
-        internal void StopVFX()
-        {
-            _particleSystem.Stop();
-        }
-        internal void EnableEmission()
-        {
-            if (_particleSystem != null)
-            {
-                var emission = _particleSystem.emission;
-                emission.enabled = true;
-            }
-        }
-        internal void DisableEmission()
-        {
-            if (_particleSystem != null)
-            {
-                var emission = _particleSystem.emission;
-                emission.enabled = false;
-            }
-        }
-        internal bool MaxAltitude()
-        {
-            return _ASLValve > 1000 || _AGLValve > 1000;
+            ActivateModuleVentValve = true;
         }
     }
 }

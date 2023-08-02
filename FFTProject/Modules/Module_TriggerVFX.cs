@@ -24,7 +24,8 @@ namespace FFT.Modules
         public Animator animator;
         public ParticleSystem _particleSystem;
         public bool _wasActive;
-        private float _fuelLevel;
+        internal float _fuelLevel;
+        internal bool _activateTriggerVFX;
         public GameState _gameState { get; private set; }
         public override bool IsActive => FFTPlugin.Instance._isActiveVessel.GetValueBool();
         public override void OnInitialize()
@@ -145,6 +146,10 @@ namespace FFT.Modules
         internal bool FuelLevelExceedsThreshold()
         {
             return _fuelLevel > 0.8f;
+        }
+        public void Activate()
+        {
+            _activateTriggerVFX = true;
         }
     }
 }

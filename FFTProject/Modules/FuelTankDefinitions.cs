@@ -38,5 +38,14 @@ namespace FFT.Modules
 
             return null;
         }
+        public Module_TriggerVFX GetTriggerVFXModule(string tankName)
+        {
+            if (fuelTanksDict.TryGetValue(tankName, out var tank))
+            {
+                return tank.GetComponent<Module_TriggerVFX>();
+            }
+
+            return null;
+        }
     }
 }

@@ -6,7 +6,6 @@ using KSP.Messages.PropertyWatchers;
 using KSP.Sim.impl;
 using SpaceWarp;
 using SpaceWarp.API.Mods;
-using UnityEngine;
 
 namespace FFT
 {
@@ -19,9 +18,8 @@ namespace FFT
         public const string ModVer = MyPluginInfo.PLUGIN_VERSION;
 
         public GameInstance _gameInstance;
-        public VesselComponent _vesselComponent;
-        public TelemetryComponent _telemetryComponent;
         public IsActiveVessel _isActiveVessel;
+        public VesselComponent _vesselComponent;
         public GameState? _state;
         public FuelTankDefinitions _fuelTankDefinitions;
         public Data_FuelTanks _dataFuelTanks;
@@ -47,7 +45,6 @@ namespace FFT
             _gameInstance = GameManager.Instance.Game;
             _isActiveVessel = new IsActiveVessel();
             _vesselComponent = new VesselComponent();
-            _telemetryComponent = new TelemetryComponent();
             _fuelTankDefinitions = new FuelTankDefinitions();
             _dataFuelTanks = new Data_FuelTanks();
             _ventValveDefinitions = new VentValveDefinitions();
@@ -77,6 +74,16 @@ namespace FFT
                 {
                     _ventValveDefinitions.PopulateVentValve(_dataValveParts);
                 }
+
+                foreach (var module in FindObjectsOfType<Module_VentValve>())
+                {
+                    module.Activate();
+                }
+                foreach (var module in FindObjectsOfType<Module_TriggerVFX>())
+                {
+                    module.Activate();
+                }
+
             }
         }
         public GameState? GetGameState()

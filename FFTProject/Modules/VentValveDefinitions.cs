@@ -1,6 +1,8 @@
 ﻿using KSP.Animation;
 using UnityEngine;
 using VFX;
+using FFT.Utilities;
+using FFT;
 
 namespace FFT.Modules
 {
@@ -24,15 +26,25 @@ namespace FFT.Modules
 
             isInitialized = true;
         }
-        public GameObject GetVentValve(string ventName)
+        public GameObject GetVentValve(string valveName)
         {
-            if (ventValveDict.TryGetValue(ventName, out var vent))
+            if (ventValveDict.TryGetValue(valveName, out var vent))
             {
                 return vent;
             }
 
             return null;
         }
+        public Module_VentValve GetVentValveModule(string valveName)
+        {
+            if (ventValveDict.TryGetValue(valveName, out var vent))
+            {
+                return vent.GetComponent<Module_VentValve>();
+            }
+
+            return null;
+        }
+
     }
 }
 
