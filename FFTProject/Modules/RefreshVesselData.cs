@@ -33,12 +33,10 @@ namespace FFT.Modules
             GameState = GameManager.Instance?.Game?.GlobalGameState?.GetGameState();
             MessageCenter = GameManager.Instance?.Game?.Messages;
         }
-
         public void RefreshStagesOAB(VesselComponent vessel)
         {
             VesselDeltaVComponentOAB = GameManager.Instance?.Game?.OAB?.Current?.Stats?.MainAssembly?.VesselDeltaV;
         }
-
         public string SituationToString(VesselSituations situation)
         {
             return situation switch
@@ -58,7 +56,6 @@ namespace FFT.Modules
             string result = biome.type.ToString().ToLower().Replace('_', ' ');
             return result.Substring(0, 1).ToUpper() + result.Substring(1);
         }
-
         public class RefreshActiveVessel
         {
             public VesselComponent ActiveVessel { get; private set; }

@@ -1,10 +1,9 @@
 ﻿using KSP.Animation;
 using KSP.Game;
-using KSP.Messages.PropertyWatchers;
 using KSP.Sim.Definitions;
-using KSP.Sim.impl;
 using UnityEngine;
 using VFX;
+using static FFT.Modules.RefreshVesselData;
 
 namespace FFT.Modules
 {
@@ -13,21 +12,23 @@ namespace FFT.Modules
         public override Type PartComponentModuleType => typeof(PartComponentModule_TriggerVFX);
 
         [SerializeField]
-        public Data_TriggerVFX _dataTriggerVFX;
+        public Data_TriggerVFX dataTriggerVFX;
         [SerializeField]
         public Data_FuelTanks _dataFuelTanks;
         [SerializeField]
         public GameObject CoolingVFX;
 
-        public TriggerVFXFromAnimation _triggerVFX;
-        public DynamicGravityForVFX _gravityForVFX;
-        public Animator animator;
-        public ParticleSystem _particleSystem;
+        public TriggerVFXFromAnimation TriggerVFX;
+        public DynamicGravityForVFX GravityForVFX;
+        public Animator Animator;
+        public ParticleSystem particleSystem;
         public bool _wasActive;
         internal float _fuelLevel;
-        internal bool _activateTriggerVFX;
+        internal bool activateTriggerVFX;
+
+        public RefreshActiveVessel refreshActiveVessel;
         public GameState _gameState { get; private set; }
-        public override bool IsActive => FFTPlugin.Instance._isActiveVessel.GetValueBool();
+        public override bool IsActive => FFTPlugin.Instance.isActiveVessel.GetValueBool();
         public override void OnInitialize()
         {
             base.OnInitialize();
@@ -46,8 +47,8 @@ namespace FFT.Modules
 
             if (CoolingVFX != null)
             {
-                _particleSystem = CoolingVFX.GetComponentInChildren<ParticleSystem>();
-                if (_particleSystem != null)
+                particleSystem = CoolingVFX.GetComponentInChildren<ParticleSystem>();
+                if (particleSystem != null)
                 {
                     FFTPlugin.Logger.LogInfo("Successfully retrieved ParticleSystem on CoolingVFX.");
                 }
@@ -61,17 +62,17 @@ namespace FFT.Modules
                 FFTPlugin.Logger.LogError("CoolingVFX GameObject is not assigned.");
             }
 
-            animator = GetComponentInParent<Animator>();
+            Animator = GetComponentInParent<Animator>();
 
-            FFTPlugin.Instance._isActiveVessel = new IsActiveVessel();
-            FFTPlugin.Instance._vesselComponent = new VesselComponent();
-            FFTPlugin.Logger.LogInfo("Module_TriggerVFX has started.");
+            refreshActiveVessel = new RefreshActiveVessel();
+
+            FFTPlugin.Logger.LogInfo("ModuleTriggerVFX has started.");
         }
         public override void AddDataModules()
         {
             base.AddDataModules();
-            this._dataTriggerVFX ??= new Data_TriggerVFX();
-            this.DataModules.TryAddUnique<Data_TriggerVFX>(this._dataTriggerVFX, out this._dataTriggerVFX);
+            this.dataTriggerVFX ??= new Data_TriggerVFX();
+            this.DataModules.TryAddUnique<Data_TriggerVFX>(this.dataTriggerVFX, out this.dataTriggerVFX);
         }
         public override void OnModuleFixedUpdate(float fixedDeltaTime)
         {
@@ -89,11 +90,9 @@ namespace FFT.Modules
             }
 
             double fillRatioAverage = fillRatioSum / count;
-
-            float opacity = _dataTriggerVFX.VFXOpacityCurve.Evaluate((float)fillRatioAverage);
-
+            float opacity = dataTriggerVFX.VFXOpacityCurve.Evaluate((float)fillRatioAverage);
             _fuelLevel = opacity;
-            animator.SetFloat("FuelLevel", _fuelLevel);
+            Animator.SetFloat("FuelLevel", _fuelLevel);
 
             if (_fuelLevel < 0)
             {
@@ -105,10 +104,13 @@ namespace FFT.Modules
                 if (!FuelLevelExceedsThreshold())
                 {
                     StopVFX();
+
+                    Debug.Log("StopVFX: " + (StopVFX == null ? "is null" : "is not null"));
                 }
-                else if (!animator.GetCurrentAnimatorStateInfo(0).IsName("CoolingVFX_LOOP"))
+                else if (!Animator.GetCurrentAnimatorStateInfo(0).IsName("CoolingVFX_LOOP"))
                 {
                     StartVFX();
+                    Debug.Log("StartVFX: " + (StartVFX == null ? "is null" : "is not null"));
                 }
             }
             else
@@ -116,30 +118,32 @@ namespace FFT.Modules
                 StopVFX();
             }
         }
-        internal void StartVFX()
+        public void StartVFX()
         {
             EnableEmission();
-            _particleSystem.Play();
-            _triggerVFX.enabled = true;
-            _gravityForVFX.enabled = true;
+            TriggerVFX.VFX01_ON();
+            GravityForVFX.enabled = true;
+            particleSystem.Play();
         }
-        internal void StopVFX()
+
+        public void StopVFX()
         {
-            _particleSystem.Stop();
+            TriggerVFX.VFX01_OFF();
+            particleSystem.Stop(); ;
         }
         internal void EnableEmission()
         {
-            if (_particleSystem != null)
+            if (particleSystem != null)
             {
-                var emission = _particleSystem.emission;
+                var emission = particleSystem.emission;
                 emission.enabled = true;
             }
         }
         internal void DisableEmission()
         {
-            if (_particleSystem != null)
+            if (particleSystem != null)
             {
-                var emission = _particleSystem.emission;
+                var emission = particleSystem.emission;
                 emission.enabled = false;
             }
         }
@@ -149,7 +153,7 @@ namespace FFT.Modules
         }
         public void Activate()
         {
-            _activateTriggerVFX = true;
+            activateTriggerVFX = true;
         }
     }
 }

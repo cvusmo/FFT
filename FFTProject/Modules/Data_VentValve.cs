@@ -15,5 +15,9 @@ namespace FFT.Modules
         public AnimationCurve VFXASLCurve;
         [KSPState]
         public AnimationCurve VFXAGLCurve;
+        [KSPState]
+        public AnimationCurve VFXVerticalSpeedCurve;
+        [KSPState]
+        public AnimationCurve VFXHorizontalSpeedCurve;
     }
 }

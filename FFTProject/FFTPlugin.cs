@@ -17,14 +17,14 @@ namespace FFT
         public const string ModName = MyPluginInfo.PLUGIN_NAME;
         public const string ModVer = MyPluginInfo.PLUGIN_VERSION;
 
-        public GameInstance _gameInstance;
-        public IsActiveVessel _isActiveVessel;
-        public VesselComponent _vesselComponent;
+        public GameInstance gameInstance;
+        public IsActiveVessel isActiveVessel;
+        public VesselComponent vesselComponent;
         public GameState? _state;
-        public FuelTankDefinitions _fuelTankDefinitions;
-        public Data_FuelTanks _dataFuelTanks;
-        public VentValveDefinitions _ventValveDefinitions;
-        public Data_ValveParts _dataValveParts;
+        public FuelTankDefinitions fuelTankDefinitions;
+        public Data_FuelTanks dataFuelTanks;
+        public VentValveDefinitions ventValveDefinitions;
+        public Data_ValveParts dataValveParts;
         public Module_TriggerVFX Module_TriggerVFX { get; private set; }
         public Module_VentValve Module_VentValve { get; private set; }
         public static FFTPlugin Instance { get; set; }
@@ -42,13 +42,13 @@ namespace FFT
             Logger = base.Logger;
             Logger.LogInfo("Loaded");
 
-            _gameInstance = GameManager.Instance.Game;
-            _isActiveVessel = new IsActiveVessel();
-            _vesselComponent = new VesselComponent();
-            _fuelTankDefinitions = new FuelTankDefinitions();
-            _dataFuelTanks = new Data_FuelTanks();
-            _ventValveDefinitions = new VentValveDefinitions();
-            _dataValveParts = new Data_ValveParts();
+            gameInstance = GameManager.Instance.Game;
+            isActiveVessel = new IsActiveVessel();
+            vesselComponent = new VesselComponent();
+            fuelTankDefinitions = new FuelTankDefinitions();
+            dataFuelTanks = new Data_FuelTanks();
+            ventValveDefinitions = new VentValveDefinitions();
+            dataValveParts = new Data_ValveParts();
         }
         public void Update()
         {
@@ -56,23 +56,23 @@ namespace FFT
 
             if (_state == GameState.Launchpad || _state == GameState.FlightView || _state == GameState.Runway)
             {
-                if (_fuelTankDefinitions == null)
+                if (fuelTankDefinitions == null)
                 {
-                    _fuelTankDefinitions = FindObjectOfType<FuelTankDefinitions>();
+                    fuelTankDefinitions = FindObjectOfType<FuelTankDefinitions>();
                 }
-                if (_ventValveDefinitions == null)
+                if (ventValveDefinitions == null)
                 {
-                    _ventValveDefinitions = FindObjectOfType<VentValveDefinitions>();
-                }
-
-                if (_fuelTankDefinitions != null && _dataFuelTanks != null)
-                {
-                    _fuelTankDefinitions.PopulateFuelTanks(_dataFuelTanks);
+                    ventValveDefinitions = FindObjectOfType<VentValveDefinitions>();
                 }
 
-                if (_ventValveDefinitions != null && _dataValveParts != null)
+                if (fuelTankDefinitions != null && dataFuelTanks != null)
                 {
-                    _ventValveDefinitions.PopulateVentValve(_dataValveParts);
+                    fuelTankDefinitions.PopulateFuelTanks(dataFuelTanks);
+                }
+
+                if (ventValveDefinitions != null && dataValveParts != null)
+                {
+                    ventValveDefinitions.PopulateVentValve(dataValveParts);
                 }
 
                 foreach (var module in FindObjectsOfType<Module_VentValve>())
