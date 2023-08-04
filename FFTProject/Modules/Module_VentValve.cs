@@ -1,8 +1,11 @@
-﻿using FFT.Modules.Core;
-using KSP.Animation;
+﻿using KSP.Animation;
+using KSP.Game;
+using KSP.Messages.PropertyWatchers;
 using KSP.Sim.Definitions;
+using KSP.Sim.impl;
 using UnityEngine;
 using VFX;
+using static FFT.Modules.RefreshVesselData;
 
 namespace FFT.Modules
 {
@@ -21,11 +24,13 @@ namespace FFT.Modules
         public DynamicGravityForVFX GravityForVFX;
         public Animator Animator;
         public ParticleSystem ParticleSystem;
-        internal float ASLValve;
-        internal float AGLValve;
-        internal bool ActivateModuleVentValve = false;
+        public float ASLValve;
+        public float AGLValve;
+        public bool ActivateModuleVentValve = false;
 
-        public VesselDataModule _vesselDataModule;
+        public RefreshVesselData refreshVesselData;
+        public RefreshActiveVessel refreshActiveVessel;
+
         public VentValveDefinitions VentValveDefinitions { get; private set; }
         public override bool IsActive => FFTPlugin.Instance._isActiveVessel.GetValueBool();
 
@@ -65,29 +70,43 @@ namespace FFT.Modules
         }
         public override void OnModuleFixedUpdate(float fixedDeltaTime)
         {
+            FFTPlugin.Logger.LogInfo("OnModuleFixedUpdate has started.");
             base.OnModuleFixedUpdate(fixedDeltaTime);
 
-            _vesselDataModule.altitudeAgl.RefreshData();
-            _vesselDataModule.altitudeAsl.RefreshData();
+            refreshActiveVessel.RefreshData();
+            VesselComponent activeVessel = refreshActiveVessel.ActiveVessel;
 
-            ASLValve = (float)_vesselDataModule.altitudeAsl.altitudeAsl;
-            AGLValve = (float)_vesselDataModule.altitudeAgl.altitudeAgl;
+            refreshVesselData.activeVessel = activeVessel;           
+            refreshVesselData.altitudeAgl.RefreshData(activeVessel);
+            refreshVesselData.altitudeAsl.RefreshData(activeVessel);
 
-            float aslCurve = DataVentValve.VFXASLCurve.Evaluate(ASLValve);
-            float aglCurve = DataVentValve.VFXAGLCurve.Evaluate(AGLValve);
-            Animator.SetFloat("ASLValve", aslCurve);
-            Animator.SetFloat("AGLValve", aglCurve);
+            ASLValve = (float)refreshVesselData.altitudeAsl.altitudeAsl;
+            AGLValve = (float)refreshVesselData.altitudeAgl.altitudeAgl;
 
+            float aslCurve = DataVentValve.VFXASLCurve?.Evaluate(ASLValve) ?? 0;
+            float aglCurve = DataVentValve.VFXAGLCurve?.Evaluate(AGLValve) ?? 0;
+
+            Animator?.SetFloat("ASLValve", aslCurve);
+            Animator?.SetFloat("AGLValve", aglCurve);
+
+           
             if (IsActive)
             {
-                if (ASLValve > 1000 || AGLValve > 1000)
-                {
-                    StartVFX();
-                }
-                else if (ASLValve > 0 || AGLValve > 0)
+                if (!MaxAltitude())
                 {
                     StopVFX();
+                    FFTPlugin.Logger.LogInfo("StopVFX Confirmed.");
                 }
+                else if (!Animator.GetCurrentAnimatorStateInfo(0).IsName("VentValveVFX_LOOP"))
+                {
+                    StartVFX();
+                    FFTPlugin.Logger.LogInfo("StartVFX Confirmed.");
+                }
+            }
+            else
+            {
+                StopVFX();
+                FFTPlugin.Logger.LogInfo("StopVFX Confirmed.");
             }
         }
         internal void StartVFX()
@@ -152,8 +171,13 @@ namespace FFT.Modules
             DataValveParts = new Data_ValveParts();
             DataVentValve = new Data_VentValve();
             DataVentValve.VFXASLCurve = new AnimationCurve(new Keyframe(0, 0), new Keyframe(1, 1));
-            DataVentValve.VFXAGLCurve = new AnimationCurve(new Keyframe(0, 0), new Keyframe(1, 1));;
-            _vesselDataModule = new VesselDataModule();
+            DataVentValve.VFXAGLCurve = new AnimationCurve(new Keyframe(0, 0), new Keyframe(1, 1));
+            refreshVesselData = new RefreshVesselData();
+            refreshActiveVessel = new RefreshActiveVessel();
+        }
+        internal bool MaxAltitude()
+        {
+            return AGLValve > 1000 || ASLValve > 1000;
         }
         public void Activate()
         {

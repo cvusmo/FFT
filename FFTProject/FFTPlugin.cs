@@ -91,6 +91,10 @@ namespace FFT
             Logger.LogInfo("_state" + _state);
             return _state;
         }
+        public VesselComponent GetActiveVessel()
+        {
+            return GameManager.Instance?.Game?.ViewController?.GetActiveVehicle(true)?.GetSimVessel(true);
+        }
         public override void OnPostInitialized() => base.OnPostInitialized();
     }
 }
