@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.6.33815.320
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FFT", "FFTProject\FFT.csproj", "{42B7B346-2964-47BD-98C0-1C3AECC98D0D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "com.github.cvusmo.fancyfueltanks", "FFTProject\com.github.cvusmo.fancyfueltanks.csproj", "{42B7B346-2964-47BD-98C0-1C3AECC98D0D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
