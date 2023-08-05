@@ -5,7 +5,7 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <LangVersion>latest</LangVersion>
         <ImplicitUsings>true</ImplicitUsings>
-        <AssemblyName>FFT</AssemblyName>
+        <AssemblyName>com.github.cvusmo.fancyfueltanks</AssemblyName>
         <Product>FFT</Product>
         <Description>Fancy Fuel Tanks</Description>
         <Version>0.1.3</Version>
