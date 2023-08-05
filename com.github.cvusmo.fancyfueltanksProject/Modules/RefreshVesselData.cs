@@ -15,7 +15,6 @@ namespace FFT.Modules
         public GameStateConfiguration GameState;
         public MessageCenter MessageCenter;
         public VesselDeltaVComponent VesselDeltaVComponentOAB;
-
         public static double UniversalTime => GameManager.Instance.Game.UniverseModel.UniversalTime;
         public VesselComponent activeVessel { get; set; }
         public RefreshActiveVessel refreshActiveVessel { get; set; }
@@ -28,12 +27,12 @@ namespace FFT.Modules
         public StaticPressure_kPa staticPressure_KPa { get; private set; }
         public AtmosphericTemperature atmosphericTemperature { get; private set; }
         public ExternalTemperature externalTemperature { get; private set; }
-        public void RefreshGameManager(VesselComponent vessel)
+        public void RefreshGameManager(VesselComponent activeVessel)
         {
             GameState = GameManager.Instance?.Game?.GlobalGameState?.GetGameState();
             MessageCenter = GameManager.Instance?.Game?.Messages;
         }
-        public void RefreshStagesOAB(VesselComponent vessel)
+        public void RefreshStagesOAB(VesselComponent activeVessel)
         {
             VesselDeltaVComponentOAB = GameManager.Instance?.Game?.OAB?.Current?.Stats?.MainAssembly?.VesselDeltaV;
         }
@@ -69,81 +68,81 @@ namespace FFT.Modules
         {
             public double altitudeAgl { get; private set; }
 
-            public void RefreshData(VesselComponent vessel)
+            public void RefreshData(VesselComponent activeVessel)
             {
-                altitudeAgl = vessel.AltitudeFromScenery;
+                altitudeAgl = activeVessel.AltitudeFromScenery;
             }
         }
         public class AltitudeAsl
         {
             public double altitudeAsl { get; private set; }
 
-            public void RefreshData(VesselComponent vessel)
+            public void RefreshData(VesselComponent activeVessel)
             {
-                altitudeAsl = vessel.AltitudeFromSeaLevel;
+                altitudeAsl = activeVessel.AltitudeFromSeaLevel;
             }
         }
         public class AltitudeFromScenery
         {
             public double altitudeFromScenery { get; private set; }
 
-            public void RefreshData(VesselComponent vessel)
+            public void RefreshData(VesselComponent activeVessel)
             {
-                altitudeFromScenery = vessel.AltitudeFromTerrain;
+                altitudeFromScenery = activeVessel.AltitudeFromTerrain;
             }
         }
         public class VerticalVelocity
         {
             public double verticalVelocity { get; private set; }
 
-            public void RefreshData(VesselComponent vessel)
+            public void RefreshData(VesselComponent activeVessel)
             {
-                verticalVelocity = vessel.VerticalSrfSpeed;
+                verticalVelocity = activeVessel.VerticalSrfSpeed;
             }
         }
         public class HorizontalVelocity
         {
             public double horizontalVelocity { get; private set; }
 
-            public void RefreshData(VesselComponent vessel)
+            public void RefreshData(VesselComponent activeVessel)
             {
-                horizontalVelocity = vessel.HorizontalSrfSpeed;
+                horizontalVelocity = activeVessel.HorizontalSrfSpeed;
             }
         }
         public class DynamicPressure_kPa
         {
             public double dynamicPressure_kPa { get; private set; }
 
-            public void RefreshData(VesselComponent vessel)
+            public void RefreshData(VesselComponent activeVessel)
             {
-                dynamicPressure_kPa = vessel.DynamicPressure_kPa;
+                dynamicPressure_kPa = activeVessel.DynamicPressure_kPa;
             }
         }
         public class StaticPressure_kPa
         {
             public double staticPressure_kPa { get; private set; }
 
-            public void RefreshData(VesselComponent vessel)
+            public void RefreshData(VesselComponent activeVessel)
             {
-                staticPressure_kPa = vessel.StaticPressure_kPa;
+                staticPressure_kPa = activeVessel.StaticPressure_kPa;
             }
         }
         public class AtmosphericTemperature
         {
             public double atmosphericTemperature { get; private set; }
 
-            public void RefreshData(VesselComponent vessel)
+            public void RefreshData(VesselComponent activeVessel)
             {
-                atmosphericTemperature = vessel.AtmosphericTemperature;
+                atmosphericTemperature = activeVessel.AtmosphericTemperature;
             }
         }
         public class ExternalTemperature
         {
             public double externalTemperature { get; private set; }
 
-            public void RefreshData(VesselComponent vessel)
+            public void RefreshData(VesselComponent activeVessel)
             {
-                externalTemperature = vessel.ExternalTemperature;
+                externalTemperature = activeVessel.ExternalTemperature;
             }
         }
         public RefreshVesselData()
@@ -159,18 +158,18 @@ namespace FFT.Modules
             this.atmosphericTemperature = new AtmosphericTemperature();
             this.externalTemperature = new ExternalTemperature();
         }
-        public void RefreshAll(VesselComponent vessel)
+        public void RefreshAll(VesselComponent activeVessel)
         {
             this.refreshActiveVessel.RefreshData();
-            this.altitudeAgl.RefreshData(vessel);
-            this.altitudeAsl.RefreshData(vessel);
-            this.altitudeFromScenery.RefreshData(vessel);
-            this.verticalVelocity.RefreshData(vessel);
-            this.horizontalVelocity.RefreshData(vessel);
-            this.dynamicPressure_KPa.RefreshData(vessel);
-            this.staticPressure_KPa.RefreshData(vessel);
-            this.atmosphericTemperature.RefreshData(vessel);
-            this.externalTemperature.RefreshData(vessel);
+            this.altitudeAgl.RefreshData(activeVessel);
+            this.altitudeAsl.RefreshData(activeVessel);
+            this.altitudeFromScenery.RefreshData(activeVessel);
+            this.verticalVelocity.RefreshData(activeVessel);
+            this.horizontalVelocity.RefreshData(activeVessel);
+            this.dynamicPressure_KPa.RefreshData(activeVessel);
+            this.staticPressure_KPa.RefreshData(activeVessel);
+            this.atmosphericTemperature.RefreshData(activeVessel);
+            this.externalTemperature.RefreshData(activeVessel);
         }
     }
 }

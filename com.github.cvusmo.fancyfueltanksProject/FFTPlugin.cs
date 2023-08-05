@@ -18,8 +18,6 @@ namespace FFT
         public const string ModVer = MyPluginInfo.PLUGIN_VERSION;
 
         public GameInstance gameInstance;
-        public IsActiveVessel isActiveVessel;
-        public VesselComponent vesselComponent;
         public GameState? _state;
         public FuelTankDefinitions fuelTankDefinitions;
         public Data_FuelTanks dataFuelTanks;
@@ -43,8 +41,6 @@ namespace FFT
             Logger.LogInfo("Loaded");
 
             gameInstance = GameManager.Instance.Game;
-            isActiveVessel = new IsActiveVessel();
-            vesselComponent = new VesselComponent();
             fuelTankDefinitions = new FuelTankDefinitions();
             dataFuelTanks = new Data_FuelTanks();
             ventValveDefinitions = new VentValveDefinitions();
@@ -90,10 +86,6 @@ namespace FFT
         {
             Logger.LogInfo("_state" + _state);
             return _state;
-        }
-        public VesselComponent GetActiveVessel()
-        {
-            return GameManager.Instance?.Game?.ViewController?.GetActiveVehicle(true)?.GetSimVessel(true);
         }
         public override void OnPostInitialized() => base.OnPostInitialized();
     }

@@ -28,7 +28,6 @@ namespace FFT.Modules
 
         public RefreshActiveVessel refreshActiveVessel;
         public GameState _gameState { get; private set; }
-        public override bool IsActive => FFTPlugin.Instance.isActiveVessel.GetValueBool();
         public override void OnInitialize()
         {
             base.OnInitialize();
