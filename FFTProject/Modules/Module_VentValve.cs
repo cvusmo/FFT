@@ -1,10 +1,7 @@
 ﻿using KSP.Animation;
-using KSP.Game;
 using KSP.Sim.Definitions;
-using KSP.Sim.impl;
 using UnityEngine;
 using VFX;
-using static FFT.Modules.RefreshVesselData;
 
 namespace FFT.Modules
 {
@@ -23,15 +20,14 @@ namespace FFT.Modules
         public TriggerVFXFromAnimation TriggerVFX;
         public DynamicGravityForVFX GravityForVFX;
         public Animator Animator;
+        public ParticleSystem ParticleSystem;
 
         //internal FFT scripts
         internal float dynamicPressure, atmosphericTemp, externalTemp, verticalSpeed, horizontalSpeed, altitudeSeaLevel, altitudeGroundLevel;
         internal bool activateModuleVentValve = false;
         internal float ASL, AGL;
-        private RefreshVesselData _refreshVesselData;
-        private RefreshActiveVessel _refreshActiveVessel;
         public VentValveDefinitions VentValveDefinitions { get; private set; }
-        public VesselComponent activeVessel { get; private set; }
+        public RefreshVesselData RefreshVesselData { get; private set; }
         public override void OnInitialize()
         {
             base.OnInitialize();
@@ -46,28 +42,15 @@ namespace FFT.Modules
         }
         public void Awake()
         {
+            ParticleSystem = VentValveVFX.GetComponentInChildren<ParticleSystem>();
             DataValveParts = new Data_ValveParts();
             DataVentValve = new Data_VentValve();
+            RefreshVesselData = new RefreshVesselData();
             Animator = GetComponentInParent<Animator>();
+            TriggerVFX = GetComponentInParent<TriggerVFXFromAnimation>();
+            GravityForVFX = GetComponentInParent<DynamicGravityForVFX>();
+
             FFTPlugin.Logger.LogInfo("Module_VentValveVFX has started.");
-        }
-        public RefreshVesselData refreshVesselData
-        {
-            get
-            {
-                if (_refreshVesselData == null)
-                    _refreshVesselData = new RefreshVesselData();
-                return _refreshVesselData;
-            }
-        }
-        public RefreshActiveVessel refreshActiveVessel
-        {
-            get
-            {
-                if (_refreshActiveVessel == null)
-                    _refreshActiveVessel = new RefreshActiveVessel();
-                return _refreshActiveVessel;
-            }
         }
         public override void AddDataModules()
         {
@@ -83,32 +66,60 @@ namespace FFT.Modules
         {
             base.OnModuleFixedUpdate(fixedDeltaTime);
 
-            var activeVessel = refreshActiveVessel;
-            var altitudeSeaLevel = activeVessel.ActiveVessel.AltitudeFromSeaLevel;
-            float ASLFromCurve = DataVentValve.VFXASLCurve.Evaluate((float)altitudeSeaLevel);
-            Animator.SetFloat("ASL", ASLFromCurve);
+            RefreshVesselData.refreshActiveVessel.RefreshData();
+            var activeVessel = RefreshVesselData.refreshActiveVessel.ActiveVessel;
+            RefreshVesselData.RefreshAll(activeVessel);
 
-            if (FFTPlugin.Instance._state == GameState.Launchpad && AltitudeCheck())
+            var altitudeSeaLevel = RefreshVesselData.altitudeAsl.altitudeAsl;
+            float ASLFromCurve = DataVentValve.VFXASLCurve.Evaluate((float)altitudeSeaLevel);
+            ASL = ASLFromCurve;
+            Animator.SetFloat("ASL", ASL);
+
+            var altitudeGroundLevel = RefreshVesselData.altitudeAgl.altitudeAgl;
+            float AGLFromCurve = DataVentValve.VFXASLCurve.Evaluate((float)altitudeGroundLevel);
+            AGL = AGLFromCurve;
+            Animator.SetFloat("AGL", AGL);
+
+            if (MaxAltitudeAchieved())
             {
                 StartVFX();
             }
-            else
+            else if (ASL == 0 && AGL == 0)
             {
                 StopVFX();
             }
+
         }
         public void StartVFX()
         {
-            TriggerVFX.VFX01_ON();
-            GravityForVFX.enabled = true;
+            EnableEmission();
+            ParticleSystem.Play();
         }
         public void StopVFX()
         {
-            TriggerVFX.VFX01_OFF();
+            DisableEmission();
+            ParticleSystem.Stop();
         }
-        public bool AltitudeCheck()
+        internal void EnableEmission()
         {
-            return altitudeGroundLevel <= 1000 || altitudeSeaLevel <= 1000;
+            if (ParticleSystem != null)
+            {
+                var emission = ParticleSystem.emission;
+                emission.enabled = true;
+            }
+        }
+        internal void DisableEmission()
+        {
+            if (ParticleSystem != null)
+            {
+                var emission = ParticleSystem.emission;
+                emission.enabled = false;
+            }
+        }
+
+        internal bool MaxAltitudeAchieved()
+        {
+            return ASL > 0 || AGL > 0;
         }
         public void Activate()
         {
