@@ -3,7 +3,6 @@ using KSP.Game;
 using KSP.Sim.Definitions;
 using UnityEngine;
 using VFX;
-using static FFT.Modules.RefreshVesselData;
 
 namespace FFT.Modules
 {
@@ -22,11 +21,8 @@ namespace FFT.Modules
         public DynamicGravityForVFX GravityForVFX;
         public Animator Animator;
         public ParticleSystem particleSystem;
-        public bool _wasActive;
         internal float _fuelLevel;
         internal bool activateTriggerVFX;
-
-        public RefreshActiveVessel refreshActiveVessel;
         public GameState _gameState { get; private set; }
         public override void OnInitialize()
         {
@@ -42,8 +38,6 @@ namespace FFT.Modules
         }
         public void Awake()
         {
-            FFTPlugin.Logger.LogInfo("Attached to GameObject: " + gameObject.name);
-
             if (CoolingVFX != null)
             {
                 particleSystem = CoolingVFX.GetComponentInChildren<ParticleSystem>();
@@ -61,9 +55,7 @@ namespace FFT.Modules
                 FFTPlugin.Logger.LogError("CoolingVFX GameObject is not assigned.");
             }
 
-            Animator = GetComponentInParent<Animator>();
-
-            refreshActiveVessel = new RefreshActiveVessel();
+            Animator = CoolingVFX.GetComponentInParent<Animator>();
 
             FFTPlugin.Logger.LogInfo("ModuleTriggerVFX has started.");
         }
@@ -77,58 +69,45 @@ namespace FFT.Modules
         {
             base.OnModuleFixedUpdate(fixedDeltaTime);
             double fillRatioSum = 0;
-            int count = 0;
+            int totalResourceCount = 0;
 
             foreach (var container in part.Model.Containers)
             {
                 foreach (var resourceID in container)
                 {
-                    count++;
+                    totalResourceCount++;
                     fillRatioSum += container.GetResourceFillRatio(resourceID);
                 }
             }
 
-            double fillRatioAverage = fillRatioSum / count;
-            float opacity = dataTriggerVFX.VFXOpacityCurve.Evaluate((float)fillRatioAverage);
-            _fuelLevel = opacity;
+            _fuelLevel = (float)(fillRatioSum / totalResourceCount);
+            float opacity = dataTriggerVFX.VFXOpacityCurve.Evaluate(_fuelLevel);
+
             Animator.SetFloat("FuelLevel", _fuelLevel);
 
-            if (_fuelLevel < 0)
+            if (FFTPlugin.Instance._state == GameState.Launchpad)
             {
-                FFTPlugin.Logger.LogError("Out of Fuel. Fuel level: " + _fuelLevel);
-            }
-
-            if (IsActive)
-            {
-                if (!FuelLevelExceedsThreshold())
+                if (FuelLevelExceedsThreshold())
                 {
                     StopVFX();
-
-                    Debug.Log("StopVFX: " + (StopVFX == null ? "is null" : "is not null"));
                 }
                 else if (!Animator.GetCurrentAnimatorStateInfo(0).IsName("CoolingVFX_LOOP"))
                 {
                     StartVFX();
-                    Debug.Log("StartVFX: " + (StartVFX == null ? "is null" : "is not null"));
                 }
-            }
-            else
-            {
-                StopVFX();
             }
         }
         public void StartVFX()
         {
-            EnableEmission();
-            TriggerVFX.VFX01_ON();
-            GravityForVFX.enabled = true;
             particleSystem.Play();
+            EnableEmission();
+            GravityForVFX.enabled = true;
         }
 
         public void StopVFX()
         {
-            TriggerVFX.VFX01_OFF();
             particleSystem.Stop(); ;
+            DisableEmission();
         }
         internal void EnableEmission()
         {
