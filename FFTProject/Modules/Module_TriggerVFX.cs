@@ -85,16 +85,13 @@ namespace FFT.Modules
 
             Animator.SetFloat("FuelLevel", _fuelLevel);
 
-            if (FFTPlugin.Instance._state == GameState.Launchpad)
+            if (FuelLevelExceedsThreshold())
             {
-                if (FuelLevelExceedsThreshold())
-                {
-                    StopVFX();
-                }
-                else if (!Animator.GetCurrentAnimatorStateInfo(0).IsName("CoolingVFX_LOOP"))
-                {
-                    StartVFX();
-                }
+                StopVFX();
+            }
+            else if (!Animator.GetCurrentAnimatorStateInfo(0).IsName("CoolingVFX_LOOP"))
+            {
+                StartVFX();
             }
         }
         public void StartVFX()
