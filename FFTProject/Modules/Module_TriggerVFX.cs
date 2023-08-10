@@ -85,7 +85,7 @@ namespace FFT.Modules
 
             Animator.SetFloat("FuelLevel", _fuelLevel);
 
-            if (FuelLevelExceedsThreshold())
+            if (!FuelLevelExceedsThreshold())
             {
                 StopVFX();
             }
