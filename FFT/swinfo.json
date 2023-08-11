@@ -4,9 +4,9 @@
   "name": "Fancy Fuel Tanks",
   "description": "Fancy Fuel Tanks",
   "source": "https://github.com/cvusmo/FFT",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "spec": "1.3",
-  "version_check": "https://raw.githubusercontent.com/cvusmo/FFT/dev/FFT/swinfo.json",
+  "version_check": "https://raw.githubusercontent.com/cvusmo/FFT/Master/FFT/swinfo.json",
   "dependencies": [
     {
       "id": "com.github.x606.spacewarp",

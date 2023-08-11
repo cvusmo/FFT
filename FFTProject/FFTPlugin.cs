@@ -2,8 +2,6 @@
 using BepInEx.Logging;
 using FFT.Modules;
 using KSP.Game;
-using KSP.Messages.PropertyWatchers;
-using KSP.Sim.impl;
 using SpaceWarp;
 using SpaceWarp.API.Mods;
 
@@ -50,7 +48,7 @@ namespace FFT
         {
             _state = BaseSpaceWarpPlugin.Game?.GlobalGameState?.GetState();
 
-            if (_state == GameState.Launchpad || _state == GameState.FlightView || _state == GameState.Runway)
+            if (_state == GameState.FlightView)
             {
                 if (fuelTankDefinitions == null)
                 {
@@ -79,7 +77,6 @@ namespace FFT
                 {
                     module.Activate();
                 }
-
             }
         }
         public GameState? GetGameState()

@@ -1,5 +1,4 @@
 ﻿using KSP.Animation;
-using KSP.Game;
 using KSP.Sim.Definitions;
 using UnityEngine;
 using VFX;
@@ -23,7 +22,6 @@ namespace FFT.Modules
         public ParticleSystem particleSystem;
         internal float _fuelLevel;
         internal bool activateTriggerVFX;
-        public GameState _gameState { get; private set; }
         public override void OnInitialize()
         {
             base.OnInitialize();
@@ -41,23 +39,9 @@ namespace FFT.Modules
             if (CoolingVFX != null)
             {
                 particleSystem = CoolingVFX.GetComponentInChildren<ParticleSystem>();
-                if (particleSystem != null)
-                {
-                    FFTPlugin.Logger.LogInfo("Successfully retrieved ParticleSystem on CoolingVFX.");
-                }
-                else
-                {
-                    FFTPlugin.Logger.LogError("Could not find ParticleSystem on CoolingVFX.");
-                }
+                Animator = CoolingVFX.GetComponentInParent<Animator>();
+                FFTPlugin.Logger.LogInfo("ModuleTriggerVFX has started.");
             }
-            else
-            {
-                FFTPlugin.Logger.LogError("CoolingVFX GameObject is not assigned.");
-            }
-
-            Animator = CoolingVFX.GetComponentInParent<Animator>();
-
-            FFTPlugin.Logger.LogInfo("ModuleTriggerVFX has started.");
         }
         public override void AddDataModules()
         {
@@ -82,7 +66,6 @@ namespace FFT.Modules
 
             _fuelLevel = (float)(fillRatioSum / totalResourceCount);
             float opacity = dataTriggerVFX.VFXOpacityCurve.Evaluate(_fuelLevel);
-
             Animator.SetFloat("FuelLevel", _fuelLevel);
 
             if (!FuelLevelExceedsThreshold())
@@ -100,7 +83,6 @@ namespace FFT.Modules
             EnableEmission();
             GravityForVFX.enabled = true;
         }
-
         public void StopVFX()
         {
             particleSystem.Stop(); ;
@@ -124,7 +106,7 @@ namespace FFT.Modules
         }
         internal bool FuelLevelExceedsThreshold()
         {
-            return _fuelLevel > 0.8f;
+            return _fuelLevel > 0.95f;
         }
         public void Activate()
         {
