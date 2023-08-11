@@ -2,11 +2,8 @@
 using BepInEx.Logging;
 using FFT.Modules;
 using KSP.Game;
-using KSP.Messages.PropertyWatchers;
-using KSP.Sim.impl;
 using SpaceWarp;
 using SpaceWarp.API.Mods;
-using UnityEngine;
 
 namespace FFT
 {
@@ -18,22 +15,21 @@ namespace FFT
         public const string ModName = MyPluginInfo.PLUGIN_NAME;
         public const string ModVer = MyPluginInfo.PLUGIN_VERSION;
 
-        public GameInstance _gameInstance;
-        public VesselComponent _vesselComponent;
-        public IsActiveVessel _isActiveVessel;
+        public GameInstance gameInstance;
         public GameState? _state;
-        public FuelTankDefinitions _fuelTankDefinitions;
-        public Data_FuelTanks _dataFuelTanks;
+        public FuelTankDefinitions fuelTankDefinitions;
+        public Data_FuelTanks dataFuelTanks;
+        public VentValveDefinitions ventValveDefinitions;
+        public Data_ValveParts dataValveParts;
         public Module_TriggerVFX Module_TriggerVFX { get; private set; }
+        public Module_VentValve Module_VentValve { get; private set; }
         public static FFTPlugin Instance { get; set; }
         public new static ManualLogSource Logger { get; set; }
         public static string Path { get; private set; }
-
         public override void OnPreInitialized()
         {
             FFTPlugin.Path = this.PluginFolderPath;
         }
-
         public override void OnInitialized()
         {
             base.OnInitialized();
@@ -42,35 +38,52 @@ namespace FFT
             Logger = base.Logger;
             Logger.LogInfo("Loaded");
 
-            _gameInstance = GameManager.Instance.Game;
-            _isActiveVessel = new IsActiveVessel();
-            _vesselComponent = new VesselComponent();
-            _fuelTankDefinitions = new FuelTankDefinitions();
+            gameInstance = GameManager.Instance.Game;
+            fuelTankDefinitions = new FuelTankDefinitions();
+            dataFuelTanks = new Data_FuelTanks();
+            ventValveDefinitions = new VentValveDefinitions();
+            dataValveParts = new Data_ValveParts();
         }
-
         public void Update()
         {
             _state = BaseSpaceWarpPlugin.Game?.GlobalGameState?.GetState();
 
-            if (_state == GameState.Launchpad || _state == GameState.FlightView || _state == GameState.Runway)
+            if (_state == GameState.FlightView)
             {
-                if (_fuelTankDefinitions == null)
+                if (fuelTankDefinitions == null)
                 {
-                    _fuelTankDefinitions = FindObjectOfType<FuelTankDefinitions>();
-                    return;  // Exit if FuelTankDefinitions is still not available
-                } else if (_fuelTankDefinitions != null && _dataFuelTanks != null)
+                    fuelTankDefinitions = FindObjectOfType<FuelTankDefinitions>();
+                }
+                if (ventValveDefinitions == null)
                 {
-                    _fuelTankDefinitions.PopulateFuelTanks(_dataFuelTanks);
+                    ventValveDefinitions = FindObjectOfType<VentValveDefinitions>();
+                }
+
+                if (fuelTankDefinitions != null && dataFuelTanks != null)
+                {
+                    fuelTankDefinitions.PopulateFuelTanks(dataFuelTanks);
+                }
+
+                if (ventValveDefinitions != null && dataValveParts != null)
+                {
+                    ventValveDefinitions.PopulateVentValve(dataValveParts);
+                }
+
+                foreach (var module in FindObjectsOfType<Module_VentValve>())
+                {
+                    module.Activate();
+                }
+                foreach (var module in FindObjectsOfType<Module_TriggerVFX>())
+                {
+                    module.Activate();
                 }
             }
         }
-
         public GameState? GetGameState()
         {
             Logger.LogInfo("_state" + _state);
             return _state;
         }
-
         public override void OnPostInitialized() => base.OnPostInitialized();
     }
 }

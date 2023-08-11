@@ -5,10 +5,10 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <LangVersion>latest</LangVersion>
         <ImplicitUsings>true</ImplicitUsings>
-        <AssemblyName>FFT</AssemblyName>
+        <AssemblyName>com.github.cvusmo.fancyfueltanks</AssemblyName>
         <Product>FFT</Product>
         <Description>Fancy Fuel Tanks</Description>
-        <Version>0.1.3</Version>
+        <Version>0.1.4</Version>
         <RestoreAdditionalProjectSources>
             https://nuget.spacewarp.org/v3/index.json
         </RestoreAdditionalProjectSources>
@@ -18,19 +18,22 @@
         <RepositoryUrl></RepositoryUrl>
         <PackageTags>KSP2-mods</PackageTags>
     </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+      <Optimize>True</Optimize>
+    </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
-        <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.0" PrivateAssets="all" />
+        <PackageReference Include="BepInEx.Analyzers" Version="1.0.8" PrivateAssets="all" />
+        <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.1" PrivateAssets="all" />
         <PackageReference Include="BepInEx.Core" Version="5.*" />
         <PackageReference Include="BepInEx.PluginInfoProps" Version="2.*" />
         <PackageReference Include="HarmonyX" Version="2.10.1" />
-        <PackageReference Include="SpaceWarp" Version="1.1.1" />
-        <PackageReference Include="UnityEngine.Modules" Version="2020.3.33" IncludeAssets="compile" />
+        <PackageReference Include="SpaceWarp" Version="1.4.0" />
+        <PackageReference Include="UnityEngine.Modules" Version="2020.3.33.1" IncludeAssets="compile" />
     </ItemGroup>
     <ItemGroup>
       <Reference Include="Assembly-CSharp">
-        <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program 2\KSP2_x64_Data\Managed\Assembly-CSharp.dll</HintPath>
-        <Publicize>true</Publicize>
+        <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program 2\KSP2_x64_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <Publicize>true</Publicize>
         <Private>false</Private>
       </Reference>
     </ItemGroup>
