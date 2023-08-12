@@ -1,9 +1,11 @@
 ﻿using KSP.Game;
 using KSP.Messages;
-using KSP.Messages.PropertyWatchers;
+using KSP.Sim.Definitions;
 using KSP.Sim.DeltaV;
 using KSP.Sim.impl;
 using KSP.Sim.Maneuver;
+using VFX;
+using static FFT.Modules.RefreshVesselData;
 using static KSP.Rendering.Planets.PQSData;
 
 namespace FFT.Modules
@@ -27,6 +29,8 @@ namespace FFT.Modules
         public StaticPressure_kPa staticPressure_KPa { get; private set; }
         public AtmosphericTemperature atmosphericTemperature { get; private set; }
         public ExternalTemperature externalTemperature { get; private set; }
+        public FuelPercentage fuelPercentage { get; private set; }
+        public IsInAtmosphere isInAtmosphere { get; private set; }
         public void RefreshGameManager(VesselComponent activeVessel)
         {
             GameState = GameManager.Instance?.Game?.GlobalGameState?.GetGameState();
@@ -145,6 +149,24 @@ namespace FFT.Modules
                 externalTemperature = activeVessel.ExternalTemperature;
             }
         }
+        public class IsInAtmosphere
+        {
+            public bool isInAtmosphere { get; private set; }
+
+            public void RefreshData(VesselComponent activeVessel)
+            {
+                isInAtmosphere = activeVessel.IsInAtmosphere;
+            }
+        }
+        public class FuelPercentage
+        {
+            public double fuelPercentage { get; private set; }
+            public void RefreshData(VesselComponent activeVessel)
+            {
+                fuelPercentage = activeVessel.FuelPercentage;
+                //fuelCheck = activeVessel.StageFuelPercentage;
+            }
+        }
         public RefreshVesselData()
         {
             this.refreshActiveVessel = new RefreshActiveVessel();
@@ -157,6 +179,8 @@ namespace FFT.Modules
             this.staticPressure_KPa = new StaticPressure_kPa();
             this.atmosphericTemperature = new AtmosphericTemperature();
             this.externalTemperature = new ExternalTemperature();
+            this.isInAtmosphere = new IsInAtmosphere();
+            this.fuelPercentage = new FuelPercentage();
         }
         public void RefreshAll(VesselComponent activeVessel)
         {
@@ -170,6 +194,8 @@ namespace FFT.Modules
             this.staticPressure_KPa.RefreshData(activeVessel);
             this.atmosphericTemperature.RefreshData(activeVessel);
             this.externalTemperature.RefreshData(activeVessel);
+            this.isInAtmosphere.RefreshData(activeVessel);
+            this.fuelPercentage.RefreshData(activeVessel);
         }
     }
 }

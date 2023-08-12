@@ -14,19 +14,28 @@ namespace FFT.Modules
         [SerializeField]
         public Data_ValveParts DataValveParts;
         [SerializeField]
+        public Data_FuelTanks DataFuelTanks;
+        [SerializeField]
         public GameObject VentValveVFX;
+        [SerializeField]
+        public GameObject CoolingVFX;
 
         //unity scripts
         public TriggerVFXFromAnimation TriggerVFX;
         public DynamicGravityForVFX GravityForVFX;
         public Animator Animator;
-        public ParticleSystem ParticleSystem;
+        public ParticleSystem PSVentValveVFX;
+        public ParticleSystem PSCoolingVFX;
 
         //internal FFT scripts
-        internal float dynamicPressure, atmosphericTemp, externalTemp, verticalSpeed, horizontalSpeed, altitudeSeaLevel, altitudeGroundLevel;
+        internal float dynamicPressure, atmosphericTemp, externalTemp, verticalSpeed, horizontalSpeed, altitudeSeaLevel, altitudeGroundLevel, isInAtmosphere, fuelCheck;
         internal bool activateModuleVentValve = false;
-        internal float ASL, AGL;
-        public VentValveDefinitions VentValveDefinitions { get; private set; }
+        internal float ASL, AGL, FL, AT;
+        internal bool InAtmo = true;
+
+        //update frequency
+        private float updateFrequency = 3.0f;
+        private float timeSinceLastUpdate = 0.0f;
         public RefreshVesselData RefreshVesselData { get; private set; }
         public override void OnInitialize()
         {
@@ -34,17 +43,21 @@ namespace FFT.Modules
 
             if (PartBackingMode == PartBackingModes.Flight)
             {
-                if (VentValveVFX)
-                {
-                    Awake();
-                }
+                InitializeVFX();
             }
         }
-        public void Awake()
+        public void InitializeVFX()
         {
-            ParticleSystem = VentValveVFX.GetComponentInChildren<ParticleSystem>();
-            DataValveParts = new Data_ValveParts();
-            DataVentValve = new Data_VentValve();
+            if (VentValveVFX != null)
+            {
+                PSVentValveVFX = VentValveVFX.GetComponentInChildren<ParticleSystem>();
+            }
+
+            if (CoolingVFX != null)
+            {
+                PSCoolingVFX = CoolingVFX.GetComponentInChildren<ParticleSystem>();
+            }
+
             RefreshVesselData = new RefreshVesselData();
             Animator = GetComponentInParent<Animator>();
             TriggerVFX = GetComponentInParent<TriggerVFXFromAnimation>();
@@ -66,57 +79,109 @@ namespace FFT.Modules
         {
             base.OnModuleFixedUpdate(fixedDeltaTime);
 
-            RefreshVesselData.refreshActiveVessel.RefreshData();
-            var activeVessel = RefreshVesselData.refreshActiveVessel.ActiveVessel;
-            RefreshVesselData.RefreshAll(activeVessel);
+            timeSinceLastUpdate += fixedDeltaTime;
 
+            if (timeSinceLastUpdate >= updateFrequency)
+            {
+                RefreshVesselData.refreshActiveVessel.RefreshData();
+                var activeVessel = RefreshVesselData.refreshActiveVessel.ActiveVessel;
+                RefreshVesselData.RefreshAll(activeVessel);
+
+                UpdateVFX();
+
+                timeSinceLastUpdate = 0.0f;
+            }
+
+            if (MaxAltitudeAchieved() && FuelLevelExceedsThreshold())
+            {
+                StartVFX();
+                FFTPlugin.Logger.LogInfo("StartVFX");
+            }
+            else if (Mathf.Approximately(ASL, 0) && Mathf.Approximately(AGL, 0) || FL < 0.95 || InAtmo is false)
+            {
+                StopVFX();
+                FFTPlugin.Logger.LogInfo("StopVFX");
+            }
+        }
+        private void UpdateVFX()
+        {
             var altitudeSeaLevel = RefreshVesselData.altitudeAsl.altitudeAsl;
-            float ASLFromCurve = DataVentValve.VFXASLCurve.Evaluate((float)altitudeSeaLevel);
-            ASL = ASLFromCurve;
+            ASL = DataVentValve.VFXASLCurve.Evaluate((float)altitudeSeaLevel);
             Animator.SetFloat("ASL", ASL);
 
             var altitudeGroundLevel = RefreshVesselData.altitudeAgl.altitudeAgl;
-            float AGLFromCurve = DataVentValve.VFXASLCurve.Evaluate((float)altitudeGroundLevel);
-            AGL = AGLFromCurve;
+            AGL = DataVentValve.VFXASLCurve.Evaluate((float)altitudeGroundLevel);
             Animator.SetFloat("AGL", AGL);
 
-            if (MaxAltitudeAchieved())
-            {
-                StartVFX();
-            }
-            else if (ASL == 0 && AGL == 0)
-            {
-                StopVFX();
-            }
+            //var atmosphericTemperature = RefreshVesselData.atmosphericTemperature.atmosphericTemperature;
+            //AT = DataVentValve.VFXAtmosphericTemperature.Evaluate((float)atmosphericTemperature);
+            //Animator.SetFloat("AT", AT);
 
+            var fuelPercentage = RefreshVesselData.fuelPercentage.fuelPercentage;
+            double scaledFuelPercentage = fuelPercentage / 100.0;
+            FFTPlugin.Logger.LogInfo("fuelPercentage is: " + scaledFuelPercentage);
+            FL = DataVentValve.VFXOpacityCurve.Evaluate((float)scaledFuelPercentage);
+            Animator.SetFloat("FL", FL);
+
+            var isInAtmosphere = RefreshVesselData.isInAtmosphere.isInAtmosphere;
+            InAtmo = isInAtmosphere;
+            Animator.SetBool("InAtmo", InAtmo);
         }
         public void StartVFX()
         {
             EnableEmission();
-            ParticleSystem.Play();
+            if (PSVentValveVFX != null)
+            {
+                PSVentValveVFX.Play();
+                FFTPlugin.Logger.LogInfo("PSVentValveVFX Start");
+            }
+            if (PSCoolingVFX != null)
+            {
+                PSCoolingVFX.Play();
+                FFTPlugin.Logger.LogInfo("PSCoolingVFX Start");
+            }
         }
+
         public void StopVFX()
         {
             DisableEmission();
-            ParticleSystem.Stop();
+            if (PSVentValveVFX != null)
+            {
+                PSVentValveVFX.Stop();
+                FFTPlugin.Logger.LogInfo("PSVentValveVFX Stop");
+            }
+            if (PSCoolingVFX != null)
+            {
+                PSCoolingVFX.Stop();
+                FFTPlugin.Logger.LogInfo("PSCoolingVFX Stop");
+            }
         }
         internal void EnableEmission()
         {
-            if (ParticleSystem != null)
+            if (PSCoolingVFX != null)
             {
-                var emission = ParticleSystem.emission;
+                var emission = PSCoolingVFX.emission;
+                emission.enabled = true;
+            }
+            if (PSVentValveVFX!= null)
+            {
+                var emission = PSVentValveVFX.emission;
                 emission.enabled = true;
             }
         }
         internal void DisableEmission()
         {
-            if (ParticleSystem != null)
+            if (PSCoolingVFX != null)
             {
-                var emission = ParticleSystem.emission;
+                var emission = PSCoolingVFX.emission;
+                emission.enabled = false;
+            }
+            if (PSVentValveVFX != null)
+            {
+                var emission = PSVentValveVFX.emission;
                 emission.enabled = false;
             }
         }
-
         internal bool MaxAltitudeAchieved()
         {
             return ASL > 0 || AGL > 0;
@@ -124,6 +189,15 @@ namespace FFT.Modules
         public void Activate()
         {
             activateModuleVentValve = true;
+        }
+        internal bool FuelLevelExceedsThreshold()
+        {
+            if (fuelCheck < 0 || fuelCheck > 1)
+            {
+                FFTPlugin.Logger.LogError("fuelCheck is out of range: " + fuelCheck);
+                return false;
+            }
+            return fuelCheck > 0.95f;
         }
     }
 }

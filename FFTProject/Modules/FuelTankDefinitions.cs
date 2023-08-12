@@ -1,5 +1,6 @@
 ﻿using KSP.Animation;
 using UnityEngine;
+using System.Collections.Generic;
 using VFX;
 
 namespace FFT.Modules
@@ -9,9 +10,7 @@ namespace FFT.Modules
         [SerializeField]
         public List<GameObject> fuelTankDefintions;
         [SerializeField]
-        public Data_TriggerVFX _dataTriggerVFX;
-        [SerializeField]
-        public Data_FuelTanks _dataFuelTanks;
+        public Data_FuelTanks DataFuelTanks;
 
         public Dictionary<string, GameObject> fuelTanksDict = new Dictionary<string, GameObject>();
         public bool isInitialized = false;
@@ -38,11 +37,11 @@ namespace FFT.Modules
 
             return null;
         }
-        public Module_TriggerVFX GetTriggerVFXModule(string tankName)
+        public Module_VentValve GetCoolingVFX(string tankName)
         {
             if (fuelTanksDict.TryGetValue(tankName, out var tank))
             {
-                return tank.GetComponent<Module_TriggerVFX>();
+                return tank.GetComponent<Module_VentValve>();
             }
 
             return null;

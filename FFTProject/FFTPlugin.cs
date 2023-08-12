@@ -21,7 +21,7 @@ namespace FFT
         public Data_FuelTanks dataFuelTanks;
         public VentValveDefinitions ventValveDefinitions;
         public Data_ValveParts dataValveParts;
-        public Module_TriggerVFX Module_TriggerVFX { get; private set; }
+        public Data_VentValve dataVentValve;
         public Module_VentValve Module_VentValve { get; private set; }
         public static FFTPlugin Instance { get; set; }
         public new static ManualLogSource Logger { get; set; }
@@ -70,10 +70,6 @@ namespace FFT
                 }
 
                 foreach (var module in FindObjectsOfType<Module_VentValve>())
-                {
-                    module.Activate();
-                }
-                foreach (var module in FindObjectsOfType<Module_TriggerVFX>())
                 {
                     module.Activate();
                 }

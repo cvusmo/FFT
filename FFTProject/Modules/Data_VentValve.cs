@@ -1,4 +1,5 @@
 ﻿using FFT.Modules;
+using System.Collections.Generic;
 using KSP.Sim;
 using KSP.Sim.Definitions;
 using System;
@@ -15,9 +16,13 @@ namespace FFT.Modules
         public AnimationCurve VFXASLCurve = new AnimationCurve(new Keyframe(0, 1), new Keyframe(1000, 0));
         [KSPState]
         public AnimationCurve VFXAGLCurve = new AnimationCurve(new Keyframe(0, 1), new Keyframe(1000, 0));
+        //[KSPState]
+        //public AnimationCurve VFXVerticalSpeedCurve;
+        //[KSPState]
+        //public AnimationCurve VFXHorizontalSpeedCurve;
         [KSPState]
-        public AnimationCurve VFXVerticalSpeedCurve;
+        public AnimationCurve VFXOpacityCurve = new AnimationCurve(new Keyframe(1, 1), new Keyframe(0.95f, 0));
         [KSPState]
-        public AnimationCurve VFXHorizontalSpeedCurve;
+        public AnimationCurve VFXAtmosphericTemperature;
     }
 }
