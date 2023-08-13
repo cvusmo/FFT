@@ -13,16 +13,17 @@ namespace FFT.Modules
         public override Type ModuleType => typeof(Module_VentValve);
 
         [KSPState]
-        public AnimationCurve VFXASLCurve = new AnimationCurve(new Keyframe(0, 1), new Keyframe(1000, 0));
+        public AnimationCurve VFXASLCurve = new AnimationCurve(new Keyframe(0, 0), new Keyframe(1000, 1));
         [KSPState]
-        public AnimationCurve VFXAGLCurve = new AnimationCurve(new Keyframe(0, 1), new Keyframe(1000, 0));
+        public AnimationCurve VFXAGLCurve = new AnimationCurve(new Keyframe(0, 0), new Keyframe(1000, 1));
+
         //[KSPState]
         //public AnimationCurve VFXVerticalSpeedCurve;
         //[KSPState]
         //public AnimationCurve VFXHorizontalSpeedCurve;
         [KSPState]
         public AnimationCurve VFXOpacityCurve = new AnimationCurve(new Keyframe(1, 1), new Keyframe(0.95f, 0));
-        [KSPState]
-        public AnimationCurve VFXAtmosphericTemperature;
+        //[KSPState]
+        //public AnimationCurve VFXAtmosphericTemperature;
     }
 }

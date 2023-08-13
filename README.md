@@ -1,21 +1,29 @@
-# FFT
-Fancy Fuel Tanks
+# Fancy Fancy Fuel Tanks v0.1.4.0 Patch Notes
 
-## [0.1.2] - Added 3 Methalox Fuel Tanks, 3 Hydrogen Fuel Tanks, and 1 Xenon Fuel Tank
+## Updates and Additions
 
-If you're having troubles installing the mod, try [CKAN](https://github.com/KSP-CKAN/CKAN/releases)!
+### New Features
+  - Introduced a linear relationship between fuel level and opacity, providing an intuitive and realistic visual representation.
+  - Implemented the `Module_VentValve`, controlling the venting process in the fuel system.
+  - Added the `RF2 Vent Valve`, a specialized component for venting operations.
+  - Remodeled all existing hydrogen tanks, enhancing visual quality and consistency.
+  - Added a new hydrogen tank, expanding the selection available to players.
+  - Implemented error logging for failure scenarios, aiding in future debugging.
 
-## Current Parts
-- **Methalox Tanks** - Model CV & ATCRS CV-401 [xs], CV-421 [s], & AT-CRS "Bieg Macks" Storage Unit [s]
-- **Hydrogen Tanks** - Model SR - SR-812 [s], SR-812A [s], SR-813 [m]
-- **Xenon Tank** - Model SP - SP-701 [s]
+### Enhancements and Optimizations
+  - **Fuel Level Calculation**: Refined the logic to calculate fuel levels accurately across different resources.
+  - **Opacity Calculation**: Modified the opacity calculation using an animation curve, creating a gradual decrease in opacity as fuel levels decrease from 1 to 0.8.
+  - **Modeling and Texturing**: Improved the aesthetic appeal and realism of the hydrogen tanks through careful remodeling and texturing.
+  -  Improved performance by only having necessary methods called during Updates/FixedUpdates
 
-## Planned Parts
--2 Models for each Fuel Type ranging in size XS to XL for Methalox, Methane, Monopropellant, Xenon, & Hydrogen Fuel
--New Fuel line
--VFX for tank cooling during launch
--Emission effect when reentry heat is added
--Antimatter Fuel Tanks when Antimatter is introduced
+### Bug Fixes
+  - Fixed an issue causing the fuel level to count up instead of down.
+  - Corrected the curve setup, aligning it with the intended relationship between fuel level and opacity.
+  - Fixed an issue where SP-701 would angle when attached radially
 
-Thank you to LuxStice for ALL of the help making this mod!
+## Next Steps
+- Continuously monitor and adjust the visual effects for further fine-tuning, ensuring that they stay aligned with fuel consumption in the vessel.
+- Focus on improving the performance and resource usage of the system.
+- Identify and resolve any new bugs or issues to enhance gameplay.
 
+These changes mark a significant update to the fuel system's visual and functional aspects. The addition of new components and a more refined look for the hydrogen tanks provides players with a more immersive experience. If you encounter any issues or have suggestions, please feel free to contribute or open an issue on GitHub.
