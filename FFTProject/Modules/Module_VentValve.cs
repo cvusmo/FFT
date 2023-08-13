@@ -34,7 +34,7 @@ namespace FFT.Modules
         internal bool InAtmo = true;
 
         //update frequency
-        private float updateFrequency = 1.5f;
+        private float updateFrequency = 0.15f;
         private float timeSinceLastUpdate = 0.0f;
         public RefreshVesselData RefreshVesselData { get; private set; }
         public override void OnInitialize()
@@ -92,11 +92,11 @@ namespace FFT.Modules
                 var activeVessel = RefreshVesselData.refreshActiveVessel.ActiveVessel;
                 RefreshVesselData.RefreshAll(activeVessel);
 
+                VFXConditions();
                 UpdateVFX();
 
                 timeSinceLastUpdate = 0.0f;
-            }
-            VFXConditions();
+            }           
         }
         private void UpdateVFX()
         {
@@ -104,12 +104,10 @@ namespace FFT.Modules
             float ASLFromCurve = DataVentValve.VFXASLCurve.Evaluate((float)altitudeSeaLevel);
             ASL = ASLFromCurve;
             Animator.SetFloat("ASL", ASL);
-            FFTPlugin.Logger.LogInfo("ASL is: " + ASL);
 
             var altitudeGroundLevel = RefreshVesselData.altitudeAgl.altitudeAgl;
             float AGLFromCurve = DataVentValve.VFXASLCurve.Evaluate((float)altitudeGroundLevel);
             AGL = AGLFromCurve;
-            FFTPlugin.Logger.LogInfo("AGL is: " + AGL);
             Animator.SetFloat("AGL", AGL);
 
             //var atmosphericTemperature = RefreshVesselData.atmosphericTemperature.atmosphericTemperature;
@@ -118,14 +116,12 @@ namespace FFT.Modules
 
             var fuelPercentage = RefreshVesselData.fuelPercentage.fuelPercentage;
             double scaledFuelPercentage = fuelPercentage / 100.0;
-            FFTPlugin.Logger.LogInfo("fuelPercentage is: " + scaledFuelPercentage);
             FL = DataVentValve.VFXOpacityCurve.Evaluate((float)scaledFuelPercentage);
             Animator.SetFloat("FL", FL);
 
             var isInAtmosphere = RefreshVesselData.isInAtmosphere.isInAtmosphere;
             InAtmo = isInAtmosphere;
             Animator.SetBool("InAtmo", InAtmo);
-            FFTPlugin.Logger.LogInfo("InAtmo is: " + InAtmo);
         }
         public void StartVFX()
         {
@@ -137,7 +133,7 @@ namespace FFT.Modules
             }
             if (PSCoolingVFX != null)
             {
-                
+
                 PSCoolingVFX.Play();
                 var emission = PSCoolingVFX.emission;
                 emission.enabled = true;
@@ -150,14 +146,12 @@ namespace FFT.Modules
                 PSVentValveVFX.Stop();
                 var emission = PSVentValveVFX.emission;
                 emission.enabled = false;
-                FFTPlugin.Logger.LogInfo("PSVentValveVFX Stop");
             }
             if (PSCoolingVFX != null)
-            {              
+            {
                 PSCoolingVFX.Stop();
                 var emission = PSCoolingVFX.emission;
                 emission.enabled = false;
-                FFTPlugin.Logger.LogInfo("PSCoolingVFX Stop");
             }
         }
         public void Activate()
@@ -166,7 +160,7 @@ namespace FFT.Modules
         }
         internal void VFXConditions()
         {
-            if ((ASL < 0.2 && FL > 0.95 || AGL < 0.2 && FL > 0.95))
+            if ((ASL < 0.98 && FL > 0.95 || AGL < 0.98 && FL > 0.95))
             {
                 StartVFX();
             }
