@@ -19,7 +19,7 @@ namespace FFT.Modules
         [KSPState]
         public AnimationCurve VFXVerticalVelocity = new AnimationCurve(new Keyframe(0, 0), new Keyframe(200, 1));
         [KSPState]
-        public AnimationCurve VFXHorizontalSpeedCurve = new AnimationCurve(new Keyframe(0, 0), new Keyframe(200, 1));
+        public AnimationCurve VFXHorizontalVelocity = new AnimationCurve(new Keyframe(0, 0), new Keyframe(200, 1));
         [KSPState]
         public AnimationCurve VFXDynamicPressure = new AnimationCurve(new Keyframe(101.325f, 0), new Keyframe(0.100f, 1));
         [KSPState]
