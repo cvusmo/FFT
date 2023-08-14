@@ -13,6 +13,7 @@ namespace FFT.Modules
     public class RefreshVesselData
     {
         public VesselComponent VesselComponent;
+        public CelestialBodyComponent CelestialBodyComponent;
         public ManeuverNodeData CurrentManeuver;
         public GameStateConfiguration GameState;
         public MessageCenter MessageCenter;

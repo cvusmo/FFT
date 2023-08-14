@@ -2,6 +2,7 @@
 using KSP.Sim.Definitions;
 using UnityEngine;
 using VFX;
+using static FFT.Modules.RefreshVesselData;
 
 namespace FFT.Modules
 {
@@ -21,16 +22,16 @@ namespace FFT.Modules
         public GameObject CoolingVFX;
 
         //unity scripts
-        public DynamicGravityForVFX GravityForVFX;
         public Animator Animator;
-        public TriggerVFXFromAnimation TriggerVFXFromAnimation;
+        public TriggerVFXFromAnimation TriggerCooling, TriggerVentValve;
         public ParticleSystem PSVentValveVFX;
         public ParticleSystem PSCoolingVFX;
+        public DynamicGravityForVFX DynamicGravityVent, DynamicGravityCooling;
 
         //internal FFT scripts
         internal float dynamicPressure, atmosphericTemp, externalTemp, verticalSpeed, horizontalSpeed, altitudeSeaLevel, altitudeGroundLevel, isInAtmosphere, fuelCheck;
         internal bool activateModuleVentValve = false;
-        internal float ASL, AGL, FL, AT;
+        internal float ASL, AGL, VV, HV, DP, SP, AT, ET, FL;
         internal bool InAtmo = true;
 
         //update frequency
@@ -51,18 +52,19 @@ namespace FFT.Modules
             if (VentValveVFX != null)
             {
                 PSVentValveVFX = VentValveVFX.GetComponentInChildren<ParticleSystem>();
+                DynamicGravityVent = VentValveVFX.GetComponentInChildren<DynamicGravityForVFX>();
+                TriggerVentValve = VentValveVFX.GetComponentInParent<TriggerVFXFromAnimation>();
             }
 
             if (CoolingVFX != null)
             {
                 PSCoolingVFX = CoolingVFX.GetComponentInChildren<ParticleSystem>();
+                DynamicGravityCooling = CoolingVFX.GetComponentInParent<DynamicGravityForVFX>();
+                TriggerCooling = CoolingVFX.GetComponentInParent<TriggerVFXFromAnimation>();
             }
 
             RefreshVesselData = new RefreshVesselData();
-            Animator = GetComponentInParent<Animator>();
-            TriggerVFXFromAnimation = GetComponentInParent<TriggerVFXFromAnimation>();
-            GravityForVFX = GetComponentInParent<DynamicGravityForVFX>();
-
+            Animator = GetComponentInParent<Animator>();         
             FFTPlugin.Logger.LogInfo("Module_VentValveVFX has started.");
         }
         public override void AddDataModules()
@@ -110,64 +112,111 @@ namespace FFT.Modules
             AGL = AGLFromCurve;
             Animator.SetFloat("AGL", AGL);
 
-            //var atmosphericTemperature = RefreshVesselData.atmosphericTemperature.atmosphericTemperature;
+            var verticalVelocity = RefreshVesselData.verticalVelocity.verticalVelocity;
+            float VVCurve = DataVentValve.VFXVerticalVelocity.Evaluate((float)verticalVelocity);
+            VV = VVCurve;
+            double roundedverticalVelocity = Math.Round(verticalVelocity, 2);
+            FFTPlugin.Logger.LogInfo("verticalVelocity: " + roundedverticalVelocity);
+            Animator.SetFloat("VV", VV);
+
+            var horizontalVelocity = RefreshVesselData.horizontalVelocity.horizontalVelocity;
+            //float DPCurve = DataVentValve.VFXDynamicPressure.Evaluate((float)dynamicPressure_KPa);
+            //DP = DPCurve;
+            double roundedhorizontalVelocity = Math.Round(horizontalVelocity, 2);
+            FFTPlugin.Logger.LogInfo("horizontalVelocity: " + roundedhorizontalVelocity);
+            //Animator.SetFloat("DP", DP);
+
+            var dynamicPressure_KPa = RefreshVesselData.dynamicPressure_KPa.dynamicPressure_kPa;
+            float DPCurve = DataVentValve.VFXDynamicPressure.Evaluate((float)dynamicPressure_KPa);
+            DP = DPCurve;
+            double roundeddynamicPressure_KPa = Math.Round(dynamicPressure_KPa, 2);
+            FFTPlugin.Logger.LogInfo("dynamicPressure_KPa: " + roundeddynamicPressure_KPa);
+            Animator.SetFloat("DP", DP);
+
+            var staticPressure_KPa = RefreshVesselData.staticPressure_KPa.staticPressure_kPa;
+            float SPCurve = DataVentValve.VFXStaticPressure.Evaluate((float)staticPressure_KPa);
+            SP = SPCurve;
+            double roundedstaticPressure_kPa = Math.Round(staticPressure_KPa, 2);
+            FFTPlugin.Logger.LogInfo("staticPressure_KPa: " + roundedstaticPressure_kPa);
+            Animator.SetFloat("SP", SP);
+
+            var atmosphericTemperature = RefreshVesselData.atmosphericTemperature.atmosphericTemperature;
             //AT = DataVentValve.VFXAtmosphericTemperature.Evaluate((float)atmosphericTemperature);
             //Animator.SetFloat("AT", AT);
+            double roundedatmosphericTemperature = Math.Round(atmosphericTemperature, 2);
+            //FFTPlugin.Logger.LogInfo("atmosphericTemperature: " + roundedatmosphericTemperature);
+
+            var externalTemperature = RefreshVesselData.externalTemperature.externalTemperature;
+            //AT = DataVentValve.VFXExternalTemperature.Evaluate((float)externalTemperature);
+            //Animator.SetFloat("ET", ET);
+            double roundedExternalTemperature = Math.Round(externalTemperature, 2);
+            //FFTPlugin.Logger.LogInfo("externalTemperature: " + roundedExternalTemperature);
+
+            var isInAtmosphere = RefreshVesselData.isInAtmosphere.isInAtmosphere;
+            InAtmo = isInAtmosphere;
+            Animator.SetBool("InAtmo", InAtmo);
 
             var fuelPercentage = RefreshVesselData.fuelPercentage.fuelPercentage;
             double scaledFuelPercentage = fuelPercentage / 100.0;
             FL = DataVentValve.VFXOpacityCurve.Evaluate((float)scaledFuelPercentage);
             Animator.SetFloat("FL", FL);
-
-            var isInAtmosphere = RefreshVesselData.isInAtmosphere.isInAtmosphere;
-            InAtmo = isInAtmosphere;
-            Animator.SetBool("InAtmo", InAtmo);
         }
         public void StartVFX()
         {
-            if (PSVentValveVFX != null)
+            FFTPlugin.Logger.LogInfo("StartVFX calling");
+            if (PSVentValveVFX != null && ((ASL < 0.99 && FL > 0.96 || AGL < 0.99 && FL > 0.96 || InAtmo || VV < 199)))
             {
+                TriggerVentValve.VFX01_ON();
+                DynamicGravityVent.enabled = true;
                 PSVentValveVFX.Play();
                 var emission = PSVentValveVFX.emission;
                 emission.enabled = true;
             }
-            if (PSCoolingVFX != null)
+            if (PSCoolingVFX != null && ((ASL < 0.99 && FL > 0.96 || AGL < 0.99 && FL > 0.96 || InAtmo || VV < 199)))
             {
-
+                TriggerCooling.VFX01_ON();
+                DynamicGravityCooling.enabled = true;
                 PSCoolingVFX.Play();
                 var emission = PSCoolingVFX.emission;
                 emission.enabled = true;
             }
-        }
+        }      
         public void StopVFX()
         {
-            if (PSVentValveVFX != null)
+
+            if (PSVentValveVFX != null && ((ASL > 0.98 && FL < 0.95 || AGL > 0.98 && FL < 0.95 || !InAtmo || VV > 200)))
             {
+                TriggerVentValve.VFX01_OFF();
+                DynamicGravityVent.enabled = false;
                 PSVentValveVFX.Stop();
                 var emission = PSVentValveVFX.emission;
                 emission.enabled = false;
             }
-            if (PSCoolingVFX != null)
+            if (PSCoolingVFX != null && ((ASL > 0.98 && FL < 0.95 || AGL > 0.98 && FL < 0.95 || !InAtmo || VV > 200)))
             {
+                TriggerCooling.VFX01_OFF();
+                DynamicGravityCooling.enabled = false;
                 PSCoolingVFX.Stop();
                 var emission = PSCoolingVFX.emission;
                 emission.enabled = false;
             }
         }
+        internal void VFXConditions()
+        {
+            if (ASL < 0.99)
+            {
+                StartVFX();
+                
+            }
+            else if (ASL > 0.98)
+            {
+                StopVFX();
+                
+            }
+        }
         public void Activate()
         {
             activateModuleVentValve = true;
-        }
-        internal void VFXConditions()
-        {
-            if ((ASL < 0.98 && FL > 0.95 || AGL < 0.98 && FL > 0.95))
-            {
-                StartVFX();
-            }
-            else if ((ASL >= 0.99 && FL < 0.95 || AGL >= 0.99 && FL < 0.95))
-            {
-                StopVFX();
-            }
-        }
+        }     
     }
 }
