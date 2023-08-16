@@ -1,23 +1,31 @@
-﻿using KSP.Game;
+﻿//|=====================Summary========================|0|
+//|      Refreshes Data & gets values to update VFX    |1|
+//|by cvusmo===========================================|4|
+//|====================================================|1|
+
+using KSP.Game;
 using KSP.Messages;
 using KSP.Sim.Definitions;
 using KSP.Sim.DeltaV;
 using KSP.Sim.impl;
 using KSP.Sim.Maneuver;
 using VFX;
-using static FFT.Modules.RefreshVesselData;
+using static FFT.Utilities.RefreshVesselData;
 using static KSP.Rendering.Planets.PQSData;
+using FFT.Managers;
+using FFT.Modules;
 
-namespace FFT.Modules
+namespace FFT.Utilities
 {
     public class RefreshVesselData
     {
+        private static RefreshVesselData _instance;
         public VesselComponent VesselComponent;
         public CelestialBodyComponent CelestialBodyComponent;
-        public ManeuverNodeData CurrentManeuver;
-        public GameStateConfiguration GameState;
+        public ManeuverNodeData CurrentManeuver;       
         public MessageCenter MessageCenter;
         public VesselDeltaVComponent VesselDeltaVComponentOAB;
+        public GameStateConfiguration GameStateConfig;
         public static double UniversalTime => GameManager.Instance.Game.UniverseModel.UniversalTime;
         public VesselComponent activeVessel { get; set; }
         public RefreshActiveVessel refreshActiveVessel { get; set; }
@@ -32,41 +40,26 @@ namespace FFT.Modules
         public ExternalTemperature externalTemperature { get; private set; }
         public FuelPercentage fuelPercentage { get; private set; }
         public IsInAtmosphere isInAtmosphere { get; private set; }
-        public void RefreshGameManager(VesselComponent activeVessel)
+        internal Manager Manager { get; private set; }
+        internal static RefreshVesselData Instance
         {
-            GameState = GameManager.Instance?.Game?.GlobalGameState?.GetGameState();
-            MessageCenter = GameManager.Instance?.Game?.Messages;
-        }
-        public void RefreshStagesOAB(VesselComponent activeVessel)
-        {
-            VesselDeltaVComponentOAB = GameManager.Instance?.Game?.OAB?.Current?.Stats?.MainAssembly?.VesselDeltaV;
-        }
-        public string SituationToString(VesselSituations situation)
-        {
-            return situation switch
+            get
             {
-                VesselSituations.PreLaunch => "Pre-Launch",
-                VesselSituations.Landed => "Landed",
-                VesselSituations.Splashed => "Splashed down",
-                VesselSituations.Flying => "Flying",
-                VesselSituations.SubOrbital => "Suborbital",
-                VesselSituations.Orbiting => "Orbiting",
-                VesselSituations.Escaping => "Escaping",
-                _ => "UNKNOWN",
-            };
-        }
-        public string BiomeToString(BiomeSurfaceData biome)
-        {
-            string result = biome.type.ToString().ToLower().Replace('_', ' ');
-            return result.Substring(0, 1).ToUpper() + result.Substring(1);
+                if (_instance == null)
+                    _instance = new RefreshVesselData();
+
+                return _instance;
+            }
         }
         public class RefreshActiveVessel
         {
             public VesselComponent ActiveVessel { get; private set; }
+            internal bool IsFlightActive = false;
 
             public void RefreshData()
             {
                 ActiveVessel = GameManager.Instance?.Game?.ViewController?.GetActiveVehicle(true)?.GetSimVessel(true);
+                IsFlightActive = true;
             }
         }
         public class AltitudeAgl
@@ -170,33 +163,37 @@ namespace FFT.Modules
         }
         public RefreshVesselData()
         {
-            this.refreshActiveVessel = new RefreshActiveVessel();
-            this.altitudeAgl = new AltitudeAgl();
-            this.altitudeAsl = new AltitudeAsl();
-            this.altitudeFromScenery = new AltitudeFromScenery();
-            this.verticalVelocity = new VerticalVelocity();
-            this.horizontalVelocity = new HorizontalVelocity();
-            this.dynamicPressure_KPa = new DynamicPressure_kPa();
-            this.staticPressure_KPa = new StaticPressure_kPa();
-            this.atmosphericTemperature = new AtmosphericTemperature();
-            this.externalTemperature = new ExternalTemperature();
-            this.isInAtmosphere = new IsInAtmosphere();
-            this.fuelPercentage = new FuelPercentage();
+            refreshActiveVessel = new RefreshActiveVessel();
+            altitudeAgl = new AltitudeAgl();
+            altitudeAsl = new AltitudeAsl();
+            altitudeFromScenery = new AltitudeFromScenery();
+            verticalVelocity = new VerticalVelocity();
+            horizontalVelocity = new HorizontalVelocity();
+            dynamicPressure_KPa = new DynamicPressure_kPa();
+            staticPressure_KPa = new StaticPressure_kPa();
+            atmosphericTemperature = new AtmosphericTemperature();
+            externalTemperature = new ExternalTemperature();
+            isInAtmosphere = new IsInAtmosphere();
+            fuelPercentage = new FuelPercentage();
         }
         public void RefreshAll(VesselComponent activeVessel)
         {
-            this.refreshActiveVessel.RefreshData();
-            this.altitudeAgl.RefreshData(activeVessel);
-            this.altitudeAsl.RefreshData(activeVessel);
-            this.altitudeFromScenery.RefreshData(activeVessel);
-            this.verticalVelocity.RefreshData(activeVessel);
-            this.horizontalVelocity.RefreshData(activeVessel);
-            this.dynamicPressure_KPa.RefreshData(activeVessel);
-            this.staticPressure_KPa.RefreshData(activeVessel);
-            this.atmosphericTemperature.RefreshData(activeVessel);
-            this.externalTemperature.RefreshData(activeVessel);
-            this.isInAtmosphere.RefreshData(activeVessel);
-            this.fuelPercentage.RefreshData(activeVessel);
+            refreshActiveVessel.RefreshData();
+            altitudeAgl.RefreshData(activeVessel);
+            altitudeAsl.RefreshData(activeVessel);
+            altitudeFromScenery.RefreshData(activeVessel);
+            verticalVelocity.RefreshData(activeVessel);
+            horizontalVelocity.RefreshData(activeVessel);
+            dynamicPressure_KPa.RefreshData(activeVessel);
+            staticPressure_KPa.RefreshData(activeVessel);
+            atmosphericTemperature.RefreshData(activeVessel);
+            externalTemperature.RefreshData(activeVessel);
+            isInAtmosphere.RefreshData(activeVessel);
+            fuelPercentage.RefreshData(activeVessel);
+        }
+        internal void OnVFXConditionsMet()
+        {
+            Manager.InitializeModules();
         }
     }
 }
