@@ -11,6 +11,7 @@ using VFX;
 using FFT.Managers;
 using FFT.Utilities;
 using static FFT.Utilities.RefreshVesselData;
+using FFT.Controllers;
 
 namespace FFT.Modules
 {

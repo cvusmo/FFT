@@ -1,12 +1,15 @@
-﻿using FFT.Managers;
+﻿//|=====================Summary========================|0|
+//| Resets the ConditionsManager to its default states |1|
+//|by cvusmo===========================================|4|
+//|====================================================|1|
+
+
+using FFT.Managers;
 using FFT.Modules;
 using Newtonsoft.Json;
 
-namespace FFT.Utilities
+namespace FFT.Controllers
 {
-    /// <summary>
-    /// Unload module and return to manager that module is reset
-    /// </summary>
     [JsonObject(MemberSerialization.OptIn)]
     public class ResetModule : LoadModule
     {

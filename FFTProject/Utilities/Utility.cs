@@ -15,7 +15,7 @@ using static KSP.Rendering.Planets.PQSData;
 
 namespace FFT.Utilities
 {
-    public static partial class Utility
+    public static class Utility
     {
         public static VesselComponent ActiveVessel;
         public static ManeuverNodeData CurrentManeuver;

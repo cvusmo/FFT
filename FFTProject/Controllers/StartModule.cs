@@ -1,11 +1,12 @@
 ﻿//|=====================Summary========================|0|
-//|          Activates & Deactivates Modules           |1|
+//|         Initiates the module start process         |1|
 //|by cvusmo===========================================|4|
 //|====================================================|1|
 
 using FFT.Modules;
+using FFT.Utilities;
 
-namespace FFT.Utilities
+namespace FFT.Controllers
 {
     public class StartModule
     {
