@@ -2,6 +2,7 @@
 //|     Ensures that the correct module gets loaded    |1|
 //|by cvusmo===========================================|4|
 //|====================================================|1|
+using BepInEx.Logging;
 using FFT.Managers;
 using FFT.Modules;
 using FFT.Utilities;
@@ -14,7 +15,8 @@ namespace FFT.Controllers
     {
         [JsonProperty]
         public bool EnableVFX = true;
-        internal ModuleEnums ModuleEnums { get; private set; }
+
+        private ManualLogSource _logger = BepInEx.Logging.Logger.CreateLogSource("LoadModule: ");
         public FuelTankDefinitions FuelTankDefinitions { get; private set; }
         public Data_FuelTanks DataFuelTanks { get; private set; }
         public VentValveDefinitions VentValveDefinitions { get; private set; }
@@ -22,31 +24,38 @@ namespace FFT.Controllers
         public Data_VentValve DataVentValve { get; private set; }
         public bool ModuleReadyToLoad { get; private set; }
         public RefreshVesselData.RefreshActiveVessel RefreshActiveVessel { get; private set; }
+        internal Manager manager => Manager.Instance;
+        internal MessageManager messagemanager => MessageManager.Instance;
+        internal ConditionsManager conditionsmanager => ConditionsManager.Instance;
+        internal ModuleEnums moduleenums => ModuleEnums.Instance;
+        internal StartModule startmodule => StartModule.Instance;
+        internal ResetModule resetmodule => ResetModule.Instance;
 
-        internal static LoadModule _instance;
-        internal LoadModule _loadmodule => LoadModule.Instance;
-        internal Manager _manager => Manager.Instance;
-        internal MessageManager _messageManager => _manager.MessageManager;
-        internal static LoadModule Instance
+        private static LoadModule _instance;
+        private static readonly object _lock = new object();
+        private LoadModule() { }
+        public static LoadModule Instance
         {
             get
             {
                 if (_instance == null)
                 {
-                    _instance = new LoadModule();
+                    lock (_lock)
+                    {
+                        if (_instance == null)
+                        {
+                            _instance = new LoadModule();
+                        }
+                    }
                 }
                 return _instance;
             }
-        }
-        internal LoadModule()
-        {
-            ModuleEnums = new ModuleEnums();
         }
         internal void Boot()
         {
             if (RefreshActiveVessel.IsFlightActive && EnableVFX)
             {
-                _manager._logger.LogInfo("Booting Module_VentValve");
+                _logger.LogInfo("Booting Module_VentValve");
                 FuelTankDefinitions = new FuelTankDefinitions();
                 DataFuelTanks = new Data_FuelTanks();
                 VentValveDefinitions = new VentValveDefinitions();
@@ -63,7 +72,7 @@ namespace FFT.Controllers
             if (ModuleEnums.IsVentValve)
             {
                 InitializeModuleComponents();
-                _manager._logger.LogInfo("Preloading Module_VentValve");
+                _logger.LogInfo("Preloading Module_VentValve");
             }
 
             Load();
@@ -72,10 +81,10 @@ namespace FFT.Controllers
         {
             if (RefreshActiveVessel.IsFlightActive && ModuleEnums.CurrentModule == ModuleEnums.ModuleType.ModuleVentValve)
             {
-                _manager._logger.LogInfo("Loading Module_VentValve");
+                _logger.LogInfo("Loading Module_VentValve");
                 ModuleReadyToLoad = true;
 
-                _messageManager.SubscribeToMessages();
+                messagemanager.SubscribeToMessages();
             }
         }
         internal void InitializeModuleComponents()

@@ -3,42 +3,43 @@
 //|by cvusmo===========================================|4|
 //|====================================================|1|
 
-using BepInEx;
 using FFT.Managers;
+using FFT.Utilities;
 using Newtonsoft.Json;
+using System;
 
 namespace FFT.Controllers
 {
     [JsonObject(MemberSerialization.OptIn)]
-    public class ResetModule : LoadModule
+    public class ResetModule
     {
-        internal ConditionsManager ConditionsManager { get; private set; }
+        public event Action ModuleResetRequested = delegate { };
 
-        public event Action ModuleReset = delegate { };
-        public ResetModule()
-        {
-            ConditionsManager = ConditionsManager;
-        }
+        private static readonly Lazy<ResetModule> _lazyInstance = new Lazy<ResetModule>(() => new ResetModule());
+        public static ResetModule Instance => _lazyInstance.Value;
+        private ResetModule() { }
         public void Reset()
         {
-            ConditionsManager.ResetStates();
+            ConditionsManager.Instance.ResetStates();
 
-            if (ConditionsManager.inFlightViewState && ConditionsManager.inPreLaunchState)
+            if (ConditionsManager.Instance.inFlightViewState && ConditionsManager.Instance.inPreLaunchState)
             {
-                ModuleReset.Invoke();
+                ModuleResetRequested.Invoke();
             }
         }
         public void Unload()
         {
-            if (!RefreshActiveVessel.IsFlightActive)
+            if (!RefreshVesselData.IsFlightActive())
             {
-                Manager.Instance._logger.LogInfo("Unloading Module");
+                Manager.Instance.Logger.LogInfo("Unloading Module");
+
                 if (ModuleEnums.IsVentValve)
                 {
                     Reset();
-                    Manager.Instance._logger.LogInfo("Reset Module_VentValve");
+                    Manager.Instance.Logger.LogInfo("Reset Module_VentValve");
                 }
             }
         }
     }
 }
+

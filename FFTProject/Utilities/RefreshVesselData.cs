@@ -15,6 +15,7 @@ namespace FFT.Utilities
     public class RefreshVesselData
     {
         private static RefreshVesselData _instance;
+        private static RefreshActiveVessel _instanceRAV;
         public VesselComponent VesselComponent;
         public CelestialBodyComponent CelestialBodyComponent;
         public ManeuverNodeData CurrentManeuver;
@@ -36,6 +37,20 @@ namespace FFT.Utilities
         public FuelPercentage fuelPercentage { get; private set; }
         public IsInAtmosphere isInAtmosphere { get; private set; }
         internal Manager Manager { get; private set; }
+        internal static RefreshActiveVessel InstanceRAV
+        {
+            get
+            {
+                if (_instanceRAV == null)
+                    _instanceRAV = new RefreshActiveVessel();
+
+                return _instanceRAV;
+            }
+        }
+        public static bool IsFlightActive()
+        {
+            return InstanceRAV.IsFlightActive;
+        }
         internal static RefreshVesselData Instance
         {
             get

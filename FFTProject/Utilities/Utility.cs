@@ -15,7 +15,7 @@ namespace FFT.Utilities
 {
     public static class Utility
     {
-        private static ManualLogSource Logger = BepInEx.Logging.Logger.CreateLogSource("FFT.Utility");
+        private static ManualLogSource _logger = BepInEx.Logging.Logger.CreateLogSource("FFT.Utility: ");
         public static VesselComponent ActiveVessel;
         public static ManeuverNodeData CurrentManeuver;
         public static GameState GameState;
@@ -57,6 +57,7 @@ namespace FFT.Utilities
                 GameState.MainMenu => "MainMenu",
                 GameState.BaseAssemblyEditor => "BaseAssemblyEditor",
                 GameState.Map3DView => "Map3DView",
+                GameState.VehicleAssemblyBuilder => "VAB",
                 _ => "UNKNOWN GAMESTATE",
             };
         }

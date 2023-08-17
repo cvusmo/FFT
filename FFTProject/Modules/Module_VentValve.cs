@@ -4,6 +4,7 @@
 //|====================================================|1|
 
 using FFT.Controllers;
+using FFT.Managers;
 using FFT.Utilities;
 using KSP.Sim.Definitions;
 using UnityEngine;
@@ -21,14 +22,15 @@ namespace FFT.Modules
         public GameObject VentValveVFX;
         [SerializeField]
         public GameObject CoolingVFX;
-
+        internal RefreshVesselData RefreshVesselData { get; private set; }
         internal Data_FuelTanks DataFuelTanks;
         internal Animator Animator;
         internal ParticleSystem PSVentValveVFX, PSCoolingVFX;
         internal DynamicGravityForVFX DynamicGravityVent, DynamicGravityCooling;
+        internal ConditionsManager conditionsmanager;  
         internal delegate void ModuleActivationChangedHandler(bool isActive);
         internal event ModuleActivationChangedHandler OnModuleActivationChanged;
-
+        internal event Action VFXConditionsMet = delegate { };
         internal float ASL, AGL, VV, HV, DP, SP, AT, ET, FL;
         internal bool InAtmo = true;
         internal bool ActivateModule;
@@ -37,16 +39,17 @@ namespace FFT.Modules
 
         private float updateFrequency = 0.5f;
         private float timeSinceLastUpdate = 0.0f;
-        internal event Action VFXConditionsMet = delegate { };
-        internal RefreshVesselData RefreshVesselData { get; private set; }
+        public Module_VentValve(ConditionsManager conditionsManager) => this.conditionsmanager = conditionsManager;
         public override void OnInitialize()
         {
             base.OnInitialize();
 
             if (PartBackingMode == PartBackingModes.Flight)
             {
-                //
+                InitializeVFX();
             }
+
+            conditionsmanager = ConditionsManager.Instance; 
         }
         internal void InitializeVFX()
         {
@@ -64,7 +67,14 @@ namespace FFT.Modules
 
             RefreshVesselData = new RefreshVesselData();
             Animator = GetComponentInParent<Animator>();
-            FFTPlugin.Logger.LogInfo("Module_VentValveVFX has started.");
+            if (conditionsmanager != null && conditionsmanager._logger != null)
+            {
+                conditionsmanager._logger.LogInfo("Module_VentValveVFX has started.");
+            }
+            else
+            {
+                throw new InvalidOperationException("Manager or its logger was not properly initialized.");
+            }
         }
         public override void AddDataModules()
         {

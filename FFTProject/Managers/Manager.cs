@@ -1,88 +1,75 @@
-﻿//|=====================Summary========================|0|
-//|          receives instructions & delegates         |1|
-//|by cvusmo===========================================|4|
-//|====================================================|1|
-
-using BepInEx.Logging;
+﻿using BepInEx.Logging;
 using FFT.Controllers;
 using FFT.Modules;
 using FFT.Utilities;
 using KSP.Game;
-using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace FFT.Managers
 {
-    [JsonObject(MemberSerialization.OptIn)]
     public class Manager
     {
-        private static Manager _instance;
-        internal List<LoadModule> Modules;
-        internal MessageManager MessageManager { get; private set; }
-        internal ManualLogSource _logger = BepInEx.Logging.Logger.CreateLogSource("FFT.Manager");
+        internal List<LoadModule> Modules { get; private set; }
+        internal ManualLogSource Logger { get; private set; } = BepInEx.Logging.Logger.CreateLogSource("Manager: ");
         internal event Action<Module_VentValve> ModuleActivationRequested = delegate { };
+        internal StartModule startmodule => StartModule.Instance;
+        internal MessageManager MessageManager => MessageManager.Instance;
+
+        private static readonly Lazy<Manager> _lazyInstance = new Lazy<Manager>(() => new Manager());
+        public static Manager Instance => _lazyInstance.Value;
         internal Manager()
         {
             Modules = new List<LoadModule>();
-            MessageManager = new MessageManager();
-
             MessageManager.ModuleReadyToLoad += HandleModuleReadyToLoad;
-        }
-        internal static Manager Instance
-        {
-            get
-            {
-                if (_instance == null)
-                    _instance = new Manager();
-
-                return _instance;
-            }
         }
         public void Update()
         {
-            
             Utility.RefreshGameManager();
             MessageManager.Update();
-            _logger.LogDebug("MessageManager.Update called");
+            Logger.LogDebug("MessageManager.Update called");
         }
         internal void LoadModuleForFlight()
         {
-            var loadModule = new LoadModule();
-            Modules.Add(loadModule);
+            if (!Modules.Contains(LoadModule.Instance))
+            {
+                Modules.Add(LoadModule.Instance);
+            }
         }
         internal List<LoadModule> InitializeModules()
         {
             List<LoadModule> localModules = new List<LoadModule>();
             try
             {
-                LoadModule loadModule = new LoadModule();
+                LoadModule loadModule = LoadModule.Instance;
                 localModules.Add(loadModule);
 
                 if (loadModule is ResetModule resetModule)
                 {
                     resetModule.ModuleReset += OnModuleReset;
                 }
-
                 return localModules;
             }
             catch (Exception ex)
             {
-                _logger.LogError("Error creating a LoadModule. Full exception: " + ex);
+                Logger.LogError("Error creating a LoadModule. Full exception: " + ex);
                 return null;
             }
         }
         internal void OnModuleReset()
         {
-            _logger.LogInfo("Module_VentValve Reset");
+            Logger.LogInfo("Module_VentValve Reset");
         }
         public void HandleModuleReadyToLoad(ModuleEnums.ModuleType moduleType)
         {
             if (StartingModule())
             {
-                StartModule startModuleInstance = new StartModule();
-                startModuleInstance.StartVentValve();
-
+                startmodule.StartVentValve();
                 if (Utility.ActiveVessel == null)
+                {
                     return;
+                }
             }
         }
         internal bool StartingModule()

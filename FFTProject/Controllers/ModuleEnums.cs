@@ -3,17 +3,26 @@
 //|by cvusmo===========================================|4|
 //|====================================================|1|
 
+using FFT.Managers;
+using System;
+using System.Collections.Generic;
+
 namespace FFT.Controllers
 {
     public class ModuleEnums
     {
         internal static Dictionary<ModuleType, Action> moduleListeners = new Dictionary<ModuleType, Action>();
 
-        public static bool IsVentValve { get; set; } = false;
-        public static bool IsModuleOne { get; set; } = false;
-        public static bool IsModuleTwo { get; set; } = false;
-        public static bool IsModuleThree { get; set; } = false;
-        public static bool IsModuleFour { get; set; } = false;
+        internal Manager manager => Manager.Instance;
+        internal MessageManager messagemanager => MessageManager.Instance;
+        internal ConditionsManager conditionsmanager => ConditionsManager.Instance;
+        internal LoadModule loadmodule => LoadModule.Instance;
+        internal StartModule startmodule => StartModule.Instance;
+        internal ResetModule resetmodule => ResetModule.Instance;
+
+        private static readonly Lazy<ModuleEnums> _lazyInstance = new Lazy<ModuleEnums>(() => new ModuleEnums());
+        public static ModuleEnums Instance => _lazyInstance.Value;
+        private ModuleEnums() { }
         public enum ModuleType
         {
             Default = 00,
@@ -24,19 +33,26 @@ namespace FFT.Controllers
             ModuleFour = 4
         }
         public static ModuleType CurrentModule { get; set; }
+
+        public static bool IsVentValve => CurrentModule == ModuleType.ModuleVentValve;
+        public static bool IsModuleOne => CurrentModule == ModuleType.ModuleOne;
+        public static bool IsModuleTwo => CurrentModule == ModuleType.ModuleTwo;
+        public static bool IsModuleThree => CurrentModule == ModuleType.ModuleThree;
+        public static bool IsModuleFour => CurrentModule == ModuleType.ModuleFour;
         public static ModuleType ParseModuleName(string moduleName)
         {
-            if (Enum.TryParse(moduleName, out ModuleType parsedModuleType))
+            if (Enum.TryParse<ModuleType>(moduleName, out ModuleType parsedModuleType))
             {
                 CurrentModule = parsedModuleType;
                 return parsedModuleType;
             }
             else
             {
-                return default;
+                return ModuleType.Default;
             }
         }
     }
 }
+
 
 

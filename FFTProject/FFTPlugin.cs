@@ -33,32 +33,40 @@ namespace FFT
         internal ModuleEnums moduleenums { get; private set; }
         internal Module_VentValve moduleventvalve { get; private set; }
         internal RefreshVesselData refreshvesseldata { get; private set; }
-
-        public new static ManualLogSource Logger { get; set; }
         public static string Path { get; private set; }
+
+        internal ManualLogSource _logger = BepInEx.Logging.Logger.CreateLogSource("FancyFuelTanks: ");
+        public FFTPlugin()
+        {
+            Initialize();
+        }
+        public void Initialize()
+        {
+            //initialization
+            _logger.LogInfo("Initializing FFTPlugin...");
+            manager = Manager.Instance;
+            messagemanager = MessageManager.Instance;
+            conditionsmanager = ConditionsManager.Instance;
+            loadmodule = LoadModule.Instance;
+            startmodule = StartModule.Instance;
+            resetmodule = ResetModule.Instance;
+            moduleenums = ModuleEnums.Instance;
+            moduleventvalve = new Module_VentValve(conditionsmanager);
+            refreshvesseldata = new RefreshVesselData();
+            _logger.LogInfo("FFTPlugin initialized");
+
+            _logger.LogInfo("Subscribing to messages... ");
+            messagemanager.SubscribeToMessages();
+            _logger.LogInfo("Subscribed to messages.");
+        }
         public override void OnPreInitialized()
         {
             FFTPlugin.Path = this.PluginFolderPath;
+            _logger.LogDebug("FFTPlugin OnPreInitialized called.");
         }
         public override void OnInitialized()
         {
             base.OnInitialized();
-            Logger = base.Logger;
-            Logger.LogDebug("Initializing FFTPlugin...");
-
-            //initialize
-            manager = new Manager();
-            messagemanager = new MessageManager();
-            conditionsmanager = new ConditionsManager();
-            loadmodule = new LoadModule();
-            startmodule = new StartModule();
-            resetmodule = new ResetModule();
-            moduleenums = new ModuleEnums();
-            moduleventvalve = new Module_VentValve();
-            refreshvesseldata = new RefreshVesselData();
-
-
-            messagemanager.SubscribeToMessages();
 
             // Configuration
             FFTConfig = Config.Bind(
@@ -68,13 +76,12 @@ namespace FFT
                 "Fancy Fuel Tanks adds Dynamic Environmental Effects to fuel tanks"
             );
 
-            UpdateConditions();
-            Logger.LogDebug("FFTPlugin initialized");
+            UpdateManager();
         }
-        public void UpdateConditions()
+        public void UpdateManager()
         {
             manager.Update();
-            Logger.LogDebug("Manager.Update() is called");
+            _logger.LogInfo("Manager.Update() is called");
         }
         public override void OnPostInitialized() => base.OnPostInitialized();
     }

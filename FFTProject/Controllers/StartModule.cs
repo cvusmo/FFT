@@ -7,6 +7,7 @@ using FFT.Modules;
 using FFT.Utilities;
 using Newtonsoft.Json;
 using KSP.Sim.impl;
+using BepInEx.Logging;
 
 namespace FFT.Controllers
 {
@@ -15,9 +16,8 @@ namespace FFT.Controllers
     {
         internal static StartModule Instance { get; } = new StartModule();
         internal Module_VentValve ModuleVentValve { get; set; }
-
-        internal StartModule() { } // Private constructor for Singleton
-
+        private ManualLogSource _logger = BepInEx.Logging.Logger.CreateLogSource("StartModule: ");
+        internal StartModule() { }
         internal void StartVentValve()
         {
             Utility.RefreshActiveVesselAndCurrentManeuver();
@@ -25,6 +25,7 @@ namespace FFT.Controllers
             if (ModuleEnums.IsVentValve)
             {
                 ActivateModule(ModuleEnums.ModuleType.ModuleVentValve);
+                _logger.LogInfo("StartVentValve called");
             }
 
             if (Utility.ActiveVessel == null)
@@ -35,6 +36,7 @@ namespace FFT.Controllers
             if (moduleType == ModuleEnums.ModuleType.ModuleVentValve && ModuleVentValve != null)
             {
                 ModuleVentValve.Activate();
+                _logger.LogInfo("ActivateModule called");
             }
         }
         internal void DeactivateModule(ModuleEnums.ModuleType moduleType)
@@ -42,6 +44,7 @@ namespace FFT.Controllers
             if (moduleType == ModuleEnums.ModuleType.ModuleVentValve && ModuleVentValve != null)
             {
                 ModuleVentValve.Deactivate();
+                _logger.LogInfo("DeactivateModule called");
             }
         }
     }

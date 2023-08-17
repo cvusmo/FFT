@@ -7,30 +7,35 @@ using FFT.Controllers;
 using FFT.Utilities;
 using KSP.Game;
 using KSP.Messages;
-using Newtonsoft.Json;
 
 namespace FFT.Managers
 {
-    [JsonObject(MemberSerialization.OptIn)]
     public class MessageManager : RefreshVesselData
     {
-        internal ManualLogSource _logger = BepInEx.Logging.Logger.CreateLogSource("FFT.MessageManager");
-        internal static ManualLogSource _logger2 = BepInEx.Logging.Logger.CreateLogSource("FFT.Listener");
+        internal ManualLogSource _logger = Logger.CreateLogSource("FFT.MessageManager");
+        internal static ManualLogSource _logger2 = Logger.CreateLogSource("FFT.Listener");
         internal event Action HandleGameStateActions = delegate { };
         internal event Action VesselStateChangedEvent = delegate { };
         internal event Action<ModuleEnums.ModuleType> ModuleReadyToLoad = delegate { };
 
-        internal ConditionsManager _conditionmanager = new ConditionsManager();
-        internal ModuleEnums ModuleEnums { get; private set; }
         internal Manager manager => Manager.Instance;
+        internal ConditionsManager conditionsmanager => ConditionsManager.Instance;
+        internal ModuleEnums moduleenums => ModuleEnums.Instance;
         internal LoadModule loadmodule => LoadModule.Instance;
+        internal StartModule startmodule => StartModule.Instance;
+        internal ResetModule resetmodule => ResetModule.Instance;
+
+
+        private static readonly Lazy<MessageManager> _lazyInstance = new Lazy<MessageManager>(() => new MessageManager());
+        public static MessageManager Instance => _lazyInstance.Value;
+        private MessageManager() { }
         public void SubscribeToMessages()
         {
             _logger.LogDebug($"Subscribing To Messages... ");
             Utility.RefreshGameManager();
-            Utility.MessageCenter.Subscribe<GameStateEnteredMessage>(msg => _conditionmanager.GameStateEnteredHandler((GameStateEnteredMessage)msg));
-            Utility.MessageCenter.Subscribe<GameStateLeftMessage>(msg => _conditionmanager.GameStateLeftHandler((GameStateLeftMessage)msg));
-            Utility.MessageCenter.Subscribe<VesselSituationChangedMessage>(msg => _conditionmanager.HandleVesselSituationChanged((VesselSituationChangedMessage)msg));
+            Utility.MessageCenter.Subscribe<GameStateEnteredMessage>(msg => conditionsmanager.GameStateEnteredHandler((GameStateEnteredMessage)msg));
+            Utility.MessageCenter.Subscribe<GameStateLeftMessage>(msg => conditionsmanager.GameStateLeftHandler((GameStateLeftMessage)msg));
+            Utility.MessageCenter.Subscribe<VesselSituationChangedMessage>(msg => conditionsmanager.HandleVesselSituationChanged((VesselSituationChangedMessage)msg));
             _logger.LogDebug($"Subscribed to: {nameof(GameStateEnteredMessage)}, {nameof(GameStateLeftMessage)}, {nameof(VesselSituationChangedMessage)}");
 
             ModuleReadyToLoad += HandleModuleReadyToLoad;
@@ -74,7 +79,7 @@ namespace FFT.Managers
         internal bool CheckAndUpdateManager()
         {
             _logger.LogDebug("CheckAndUpdateManager triggered.");
-            if (_conditionmanager.ConditionsReady())
+            if (conditionsmanager.ConditionsReady())
             {
                 Manager.Instance.Update();
                 return true;
@@ -103,7 +108,7 @@ namespace FFT.Managers
         internal void OnDestroy()
         {
             _logger.LogDebug("OnDestroy triggered.");
-            Utility.MessageCenter.Unsubscribe<GameStateEnteredMessage>(_conditionmanager.GameStateEnteredHandler);
+            Utility.MessageCenter.Unsubscribe<GameStateEnteredMessage>(conditionsmanager.GameStateEnteredHandler);
             ModuleReadyToLoad -= HandleModuleReadyToLoad;
         }
     }
