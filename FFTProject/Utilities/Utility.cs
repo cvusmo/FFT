@@ -7,25 +7,20 @@
 using BepInEx.Logging;
 using KSP.Game;
 using KSP.Messages;
-using KSP.Sim.DeltaV;
 using KSP.Sim.impl;
 using KSP.Sim.Maneuver;
-using System.Reflection;
 using static KSP.Rendering.Planets.PQSData;
 
 namespace FFT.Utilities
 {
     public static class Utility
     {
+        private static ManualLogSource Logger = BepInEx.Logging.Logger.CreateLogSource("FFT.Utility");
         public static VesselComponent ActiveVessel;
         public static ManeuverNodeData CurrentManeuver;
-        public static string LayoutPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "ModuleList.json");
         public static GameState GameState;
-        public static VesselSituations vesselSituations;
-        private static ManualLogSource Logger = BepInEx.Logging.Logger.CreateLogSource("FFT.Utility");
-        public static MessageCenter MessageCenter;
-        public static VesselDeltaVComponent VesselDeltaVComponentOAB;
         public static VesselSituations VesselSituations { get; private set; }
+        public static MessageCenter MessageCenter { get; private set; }
         public static double UniversalTime => GameManager.Instance.Game.UniverseModel.UniversalTime;
         public static void RefreshActiveVesselAndCurrentManeuver()
         {
@@ -36,10 +31,6 @@ namespace FFT.Utilities
         {
             var state = GameManager.Instance?.Game?.GlobalGameState?.GetGameState();
             MessageCenter = GameManager.Instance?.Game?.Messages;
-        }
-        public static void RefreshStagesOAB()
-        {
-            VesselDeltaVComponentOAB = GameManager.Instance?.Game?.OAB?.Current?.Stats?.MainAssembly?.VesselDeltaV;
         }
         public static string SituationToString(VesselSituations situation)
         {
@@ -53,6 +44,20 @@ namespace FFT.Utilities
                 VesselSituations.Orbiting => "Orbiting",
                 VesselSituations.Escaping => "Escaping",
                 _ => "UNKNOWN",
+            };
+        }
+        public static string GameStateToString(GameState gamestate)
+        {
+            return gamestate switch
+            {
+                GameState.KerbalSpaceCenter => "KSC",
+                GameState.Launchpad => "LaunchPad",
+                GameState.Runway => "Runway",
+                GameState.FlightView => "FlightView",
+                GameState.MainMenu => "MainMenu",
+                GameState.BaseAssemblyEditor => "BaseAssemblyEditor",
+                GameState.Map3DView => "Map3DView",
+                _ => "UNKNOWN GAMESTATE",
             };
         }
         public static string BiomeToString(BiomeSurfaceData biome)

@@ -39,7 +39,10 @@ namespace FFT.Managers
         }
         public void Update()
         {
+            
             Utility.RefreshGameManager();
+            MessageManager.Update();
+            _logger.LogDebug("MessageManager.Update called");
         }
         internal void LoadModuleForFlight()
         {
@@ -67,7 +70,7 @@ namespace FFT.Managers
                 return null;
             }
         }
-        private void OnModuleReset()
+        internal void OnModuleReset()
         {
             _logger.LogInfo("Module_VentValve Reset");
         }
@@ -82,7 +85,7 @@ namespace FFT.Managers
                     return;
             }
         }
-        private bool StartingModule()
+        internal bool StartingModule()
         {
             bool isFlightActive = Modules.FirstOrDefault()?.RefreshActiveVessel?.IsFlightActive ?? false;
             return (Utility.GameState == GameState.FlightView && isFlightActive);

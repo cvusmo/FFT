@@ -15,6 +15,7 @@ namespace FFT.Managers
     public class MessageManager : RefreshVesselData
     {
         internal ManualLogSource _logger = BepInEx.Logging.Logger.CreateLogSource("FFT.MessageManager");
+        internal static ManualLogSource _logger2 = BepInEx.Logging.Logger.CreateLogSource("FFT.Listener");
         internal event Action HandleGameStateActions = delegate { };
         internal event Action VesselStateChangedEvent = delegate { };
         internal event Action<ModuleEnums.ModuleType> ModuleReadyToLoad = delegate { };
@@ -25,16 +26,20 @@ namespace FFT.Managers
         internal LoadModule loadmodule => LoadModule.Instance;
         public void SubscribeToMessages()
         {
+            _logger.LogDebug($"Subscribing To Messages... ");
             Utility.RefreshGameManager();
             Utility.MessageCenter.Subscribe<GameStateEnteredMessage>(msg => _conditionmanager.GameStateEnteredHandler((GameStateEnteredMessage)msg));
             Utility.MessageCenter.Subscribe<GameStateLeftMessage>(msg => _conditionmanager.GameStateLeftHandler((GameStateLeftMessage)msg));
             Utility.MessageCenter.Subscribe<VesselSituationChangedMessage>(msg => _conditionmanager.HandleVesselSituationChanged((VesselSituationChangedMessage)msg));
+            _logger.LogDebug($"Subscribed to: {nameof(GameStateEnteredMessage)}, {nameof(GameStateLeftMessage)}, {nameof(VesselSituationChangedMessage)}");
+
             ModuleReadyToLoad += HandleModuleReadyToLoad;
+            _logger.LogDebug("Subscribed to ModuleReadyToLoad event.");
         }
         static MessageManager()
         {
-            ModuleEnums.moduleListeners[ModuleEnums.ModuleType.ModuleVentValve] = () => { /* ModuleVentValve's listening logic here */ };
-            ModuleEnums.moduleListeners[ModuleEnums.ModuleType.ModuleOne] = () => { /* ModuleOne's listening logic here */ };
+            ModuleEnums.moduleListeners[ModuleEnums.ModuleType.ModuleVentValve] = () => { _logger2.LogDebug("Listening to ModuleVentValve."); };
+            //ModuleEnums.moduleListeners[ModuleEnums.ModuleType.ModuleOne] = () => { /* ModuleOne's listening logic here */ };
         }
         internal ModuleEnums.ModuleType GetCurrentModule(ModuleEnums.ModuleType moduleType)
         {
@@ -46,16 +51,17 @@ namespace FFT.Managers
         }
         internal void Update()
         {
+            _logger.LogDebug("MessageManager.Update() triggered.");
             Utility.RefreshGameManager();
 
-            if (GameStateConfig.GameState == GameState.FlightView)
+            if (Utility.GameState == GameState.FlightView)
             {
                 Utility.RefreshActiveVesselAndCurrentManeuver();
                 if (Utility.ActiveVessel == null)
                     return;
             }
         }
-        private bool StartListening(ModuleEnums.ModuleType moduleType)
+        internal bool StartListening(ModuleEnums.ModuleType moduleType)
         {
             if (ModuleEnums.moduleListeners.TryGetValue(moduleType, out Action listenerAction))
             {
@@ -65,8 +71,9 @@ namespace FFT.Managers
             }
             return false;
         }
-        private bool CheckAndUpdateManager()
+        internal bool CheckAndUpdateManager()
         {
+            _logger.LogDebug("CheckAndUpdateManager triggered.");
             if (_conditionmanager.ConditionsReady())
             {
                 Manager.Instance.Update();
@@ -76,6 +83,7 @@ namespace FFT.Managers
         }
         internal void HandleModuleReadyToLoad(ModuleEnums.ModuleType moduleType)
         {
+            _logger.LogDebug("HandleModuleReadyToLoad triggered.");
             Utility.RefreshGameManager();
 
             var currentModuleType = GetCurrentModule(moduleType);
@@ -94,6 +102,7 @@ namespace FFT.Managers
         }
         internal void OnDestroy()
         {
+            _logger.LogDebug("OnDestroy triggered.");
             Utility.MessageCenter.Unsubscribe<GameStateEnteredMessage>(_conditionmanager.GameStateEnteredHandler);
             ModuleReadyToLoad -= HandleModuleReadyToLoad;
         }

@@ -13,7 +13,7 @@ namespace FFT.Controllers
     public class LoadModule
     {
         [JsonProperty]
-        public bool EnableVFX;
+        public bool EnableVFX = true;
         internal ModuleEnums ModuleEnums { get; private set; }
         public FuelTankDefinitions FuelTankDefinitions { get; private set; }
         public Data_FuelTanks DataFuelTanks { get; private set; }
@@ -23,10 +23,10 @@ namespace FFT.Controllers
         public bool ModuleReadyToLoad { get; private set; }
         public RefreshVesselData.RefreshActiveVessel RefreshActiveVessel { get; private set; }
 
-        private static LoadModule _instance;
-        private LoadModule _loadmodule => LoadModule.Instance;
-        private Manager _manager => Manager.Instance;
-        private MessageManager _messageManager => _manager.MessageManager;
+        internal static LoadModule _instance;
+        internal LoadModule _loadmodule => LoadModule.Instance;
+        internal Manager _manager => Manager.Instance;
+        internal MessageManager _messageManager => _manager.MessageManager;
         internal static LoadModule Instance
         {
             get
@@ -78,7 +78,7 @@ namespace FFT.Controllers
                 _messageManager.SubscribeToMessages();
             }
         }
-        private void InitializeModuleComponents()
+        internal void InitializeModuleComponents()
         {
             if (FuelTankDefinitions == null)
             {
