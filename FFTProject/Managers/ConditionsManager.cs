@@ -7,9 +7,11 @@ using FFT.Controllers;
 using FFT.Utilities;
 using KSP.Game;
 using KSP.Messages;
+using Newtonsoft.Json;
 
 namespace FFT.Managers
 {
+    [JsonObject(MemberSerialization.OptIn)]
     public class ConditionsManager
     {
         internal ManualLogSource _logger = BepInEx.Logging.Logger.CreateLogSource("FFT.MessageHandler");
@@ -49,6 +51,11 @@ namespace FFT.Managers
             inPreLaunchState = Utility.VesselSituations == KSP.Sim.impl.VesselSituations.PreLaunch;
             inFlightViewState = Utility.GameState == GameState.FlightView;
             return inPreLaunchState && inFlightViewState;
+        }
+        public void ResetStates()
+        {
+            inFlightViewState = false;
+            inPreLaunchState = false;
         }
     }
 }

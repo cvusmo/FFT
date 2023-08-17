@@ -68,6 +68,16 @@ namespace FFT.Controllers
 
             Load();
         }
+        internal void Load()
+        {
+            if (RefreshActiveVessel.IsFlightActive && ModuleEnums.CurrentModule == ModuleEnums.ModuleType.ModuleVentValve)
+            {
+                _manager._logger.LogInfo("Loading Module_VentValve");
+                ModuleReadyToLoad = true;
+
+                _messageManager.SubscribeToMessages();
+            }
+        }
         private void InitializeModuleComponents()
         {
             if (FuelTankDefinitions == null)
@@ -88,15 +98,6 @@ namespace FFT.Controllers
                 VentValveDefinitions.PopulateVentValve(DataValveParts);
             }
         }
-        internal void Load()
-        {
-            if (RefreshActiveVessel.IsFlightActive && ModuleEnums.IsVentValve)
-            {
-                _manager._logger.LogInfo("Loading Module_VentValve");
-                ModuleReadyToLoad = true;
-
-                _messageManager.SubscribeToMessages(); // Make sure MessageManager is listening to necessary messages
-            }
-        }
+        
     }
 }

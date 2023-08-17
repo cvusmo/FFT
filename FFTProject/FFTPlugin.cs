@@ -8,8 +8,11 @@ using BepInEx.Configuration;
 using BepInEx.Logging;
 using FFT.Controllers;
 using FFT.Managers;
+using Newtonsoft.Json.Linq;
 using SpaceWarp;
 using SpaceWarp.API.Mods;
+using System;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace FFT
 {
@@ -31,17 +34,25 @@ namespace FFT
         public override void OnInitialized()
         {
             FFTPlugin.Path = this.PluginFolderPath;
-            base.OnInitialized();
-            messagemanager.SubscribeToMessages();
-            Logger = base.Logger;
-            Logger.LogInfo("Loaded");
 
-            // configuration
-            FFTConfig = Config.Bind
-                ("Fancy Fuel Tanks Settings",
+            Logger = base.Logger;
+            Logger.LogInfo("Initializing FFTPlugin...");
+
+            messagemanager = new MessageManager();
+            messagemanager.SubscribeToMessages();
+
+            // Configuration
+            FFTConfig = Config.Bind(
+                "Fancy Fuel Tanks Settings",
                 "Fancy Fuel Tanks v0.1.4.1",
-                LoadModule.EnableVFX, "Fancy Fuel Tanks adds Dynamic Environmental Effects to fuel tanks");
+                LoadModule.EnableVFX,
+                "Fancy Fuel Tanks adds Dynamic Environmental Effects to fuel tanks"
+            );
+
             UpdateConditions();
+
+            base.OnInitialized();
+            Logger.LogInfo("FFTPlugin initialized.");
         }
         public void UpdateConditions()
         {

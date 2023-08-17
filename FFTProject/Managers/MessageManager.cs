@@ -7,9 +7,11 @@ using FFT.Controllers;
 using FFT.Utilities;
 using KSP.Game;
 using KSP.Messages;
+using Newtonsoft.Json;
 
 namespace FFT.Managers
 {
+    [JsonObject(MemberSerialization.OptIn)]
     public class MessageManager : RefreshVesselData
     {
         internal ManualLogSource _logger = BepInEx.Logging.Logger.CreateLogSource("FFT.MessageManager");

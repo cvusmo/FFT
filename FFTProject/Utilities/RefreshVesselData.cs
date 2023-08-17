@@ -3,17 +3,12 @@
 //|by cvusmo===========================================|4|
 //|====================================================|1|
 
+using FFT.Managers;
 using KSP.Game;
 using KSP.Messages;
-using KSP.Sim.Definitions;
 using KSP.Sim.DeltaV;
 using KSP.Sim.impl;
 using KSP.Sim.Maneuver;
-using VFX;
-using static FFT.Utilities.RefreshVesselData;
-using static KSP.Rendering.Planets.PQSData;
-using FFT.Managers;
-using FFT.Modules;
 
 namespace FFT.Utilities
 {
@@ -22,7 +17,7 @@ namespace FFT.Utilities
         private static RefreshVesselData _instance;
         public VesselComponent VesselComponent;
         public CelestialBodyComponent CelestialBodyComponent;
-        public ManeuverNodeData CurrentManeuver;       
+        public ManeuverNodeData CurrentManeuver;
         public MessageCenter MessageCenter;
         public VesselDeltaVComponent VesselDeltaVComponentOAB;
         public GameStateConfiguration GameStateConfig;
@@ -190,10 +185,6 @@ namespace FFT.Utilities
             externalTemperature.RefreshData(activeVessel);
             isInAtmosphere.RefreshData(activeVessel);
             fuelPercentage.RefreshData(activeVessel);
-        }
-        internal void OnVFXConditionsMet()
-        {
-            Manager.InitializeModules();
         }
     }
 }

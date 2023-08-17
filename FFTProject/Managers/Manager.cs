@@ -8,9 +8,11 @@ using FFT.Controllers;
 using FFT.Modules;
 using FFT.Utilities;
 using KSP.Game;
+using Newtonsoft.Json;
 
 namespace FFT.Managers
 {
+    [JsonObject(MemberSerialization.OptIn)]
     public class Manager
     {
         private static Manager _instance;
@@ -69,7 +71,7 @@ namespace FFT.Managers
         {
             _logger.LogInfo("Module_VentValve Reset");
         }
-        private void HandleModuleReadyToLoad(ModuleEnums.ModuleType moduleType)
+        public void HandleModuleReadyToLoad(ModuleEnums.ModuleType moduleType)
         {
             if (StartingModule())
             {

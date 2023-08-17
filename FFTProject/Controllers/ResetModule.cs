@@ -3,9 +3,8 @@
 //|by cvusmo===========================================|4|
 //|====================================================|1|
 
-
+using BepInEx;
 using FFT.Managers;
-using FFT.Modules;
 using Newtonsoft.Json;
 
 namespace FFT.Controllers
@@ -13,24 +12,31 @@ namespace FFT.Controllers
     [JsonObject(MemberSerialization.OptIn)]
     public class ResetModule : LoadModule
     {
+        internal ConditionsManager ConditionsManager { get; private set; }
 
         public event Action ModuleReset = delegate { };
+        public ResetModule()
+        {
+            ConditionsManager = ConditionsManager;
+        }
         public void Reset()
         {
-            if (IsFlightActive)
+            ConditionsManager.ResetStates();
+
+            if (ConditionsManager.inFlightViewState && ConditionsManager.inPreLaunchState)
             {
                 ModuleReset.Invoke();
             }
         }
         public void Unload()
         {
-            if (!IsFlightActive)
+            if (!RefreshActiveVessel.IsFlightActive)
             {
-                Manager._logger.LogInfo("Unloading Module");
-                if (IsVentValve)
+                Manager.Instance._logger.LogInfo("Unloading Module");
+                if (ModuleEnums.IsVentValve)
                 {
                     Reset();
-                    Manager._logger.LogInfo("Reset Module_VentValve");
+                    Manager.Instance._logger.LogInfo("Reset Module_VentValve");
                 }
             }
         }
