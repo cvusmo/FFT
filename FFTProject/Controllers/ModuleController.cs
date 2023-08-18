@@ -2,31 +2,48 @@
 //|             Dictionary for module types            |1|
 //|by cvusmo===========================================|4|
 //|====================================================|1|
-
 using FFT.Controllers.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace FFT.Controllers
 {
-    public class ModuleController
+    public sealed class ModuleController
     {
-        private Dictionary<ModuleType, bool> moduleStates = new Dictionary<ModuleType, bool>();
-        private IModuleController moduleController;
+        private readonly Dictionary<ModuleType, bool> moduleStates = new Dictionary<ModuleType, bool>();
+        private static ModuleController _instance;
+        private static readonly object _lock = new object();
         public enum ModuleType
         {
-            Default = 00,
-            ModuleVentValve = 0,
-            ModuleOne = 1,
-            ModuleTwo = 2,
-            ModuleThree = 3,
-            ModuleFour = 4
+            Default = 0,
+            ModuleVentValve = 1,
+            ModuleOne = 2,
+            ModuleTwo = 3,
+            ModuleThree = 4,
+            ModuleFour = 5
         }
-        public bool IsModuleLoaded { get; set; }
-        public bool ShouldResetModule { get; set; }
-        public ModuleController(IModuleController moduleController)
+        internal bool IsModuleLoaded { get; set; }
+        internal bool ShouldResetModule { get; set; }
+        internal static ModuleController Instance
         {
-            this.moduleController = moduleController;
+            get
+            {
+                if (_instance == null)
+                {
+                    lock (_lock)
+                    {
+                        if (_instance == null)
+                        {
+                            _instance = new ModuleController();
+                        }
+                    }
+                }
+                return _instance;
+            }
+        }
+        private ModuleController()
+        {
             InitializeModuleStates();
         }
         private void InitializeModuleStates()
@@ -36,7 +53,7 @@ namespace FFT.Controllers
                 moduleStates[moduleType] = false;
             }
         }
-        public void SetModuleState(ModuleType type, bool state)
+        internal void SetModuleState(ModuleType type, bool state)
         {
             if (!moduleStates.ContainsKey(type))
             {
@@ -45,7 +62,7 @@ namespace FFT.Controllers
 
             moduleStates[type] = state;
         }
-        public bool GetModuleState(ModuleType type)
+        internal bool GetModuleState(ModuleType type)
         {
             if (moduleStates.TryGetValue(type, out bool state))
             {
@@ -53,11 +70,11 @@ namespace FFT.Controllers
             }
             throw new ArgumentException($"Unsupported ModuleType: {type}");
         }
-        public void SetVentValveState(bool state)
+        internal void SetVentValveState(bool state)
         {
             SetModuleState(ModuleType.ModuleVentValve, state);
         }
-        public void ResetAllModuleStates()
+        internal void ResetAllModuleStates()
         {
             foreach (var key in moduleStates.Keys.ToList())
             {
@@ -66,6 +83,6 @@ namespace FFT.Controllers
 
             IsModuleLoaded = false;
             ShouldResetModule = false;
-        } 
+        }
     }
 }

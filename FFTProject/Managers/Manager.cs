@@ -6,29 +6,39 @@ using BepInEx.Logging;
 using FFT.Controllers;
 using FFT.Utilities;
 using KSP.Game;
+using System;
+using System.Collections.Generic;
 
 namespace FFT.Managers
 {
     public class Manager
     {
         private List<LoadModule> Modules { get; } = new List<LoadModule>();
-        internal ManualLogSource Logger { get; }
-        private readonly StartModule _startmodule;
-        private readonly MessageManager _messageManager;
-        private readonly ModuleController _moduleController;
-        private readonly LoadModule _loadModule;
+        internal ManualLogSource Logger { get; private set; }
 
-        public Manager(
-            StartModule startmodule,
-            MessageManager messageManager,
-            ModuleController moduleController,
-            LoadModule loadModule)
+        private static Manager _instance;
+        private static readonly object _lock = new object();
+
+        private StartModule _startmodule => StartModule.Instance;
+        private MessageManager _messageManager => MessageManager.Instance;
+        private ModuleController _moduleController => ModuleController.Instance;
+        private LoadModule _loadModule => LoadModule.Instance;
+        public static Manager Instance
         {
-            _startmodule = startmodule ?? throw new ArgumentNullException(nameof(startmodule));
-            _messageManager = messageManager ?? throw new ArgumentNullException(nameof(messageManager));
-            _moduleController = moduleController ?? throw new ArgumentNullException(nameof(moduleController));
-            _loadModule = loadModule ?? throw new ArgumentNullException(nameof(loadModule));
-
+            get
+            {
+                lock (_lock)
+                {
+                    if (_instance == null)
+                    {
+                        _instance = Manager.Instance;
+                    }
+                    return _instance;
+                }
+            }
+        }
+        private Manager()
+        {
             Logger = BepInEx.Logging.Logger.CreateLogSource("FFT.Manager: ");
             _messageManager.ModuleReadyToLoad += HandleModuleReadyToLoad;
         }
@@ -72,3 +82,4 @@ namespace FFT.Managers
         }
     }
 }
+

@@ -3,8 +3,6 @@
 //|by cvusmo===========================================|4|
 //|====================================================|1|
 using BepInEx.Logging;
-using FFT.Controllers;
-using FFT.Controllers.Interfaces;
 using FFT.Utilities;
 using KSP.Game;
 using KSP.Messages;
@@ -14,126 +12,97 @@ namespace FFT.Managers
 {
     public class ConditionsManager
     {
-        private readonly ManualLogSource _logger;
-        private readonly Manager _manager;
-        private readonly MessageManager _messagemanager;
-        private readonly ModuleController _modulecontroller;
-        private readonly LoadModule _loadmodule;
-        private readonly StartModule _startmodule;
-        private readonly ResetModule _resetmodule;
+        internal readonly ManualLogSource _logger;
+        internal readonly MessageManager _messageManager;
+        internal static ConditionsManager _instance;
+        internal static readonly object _lock = new object();
 
-        public event Action<GameStateEnteredMessage> GameStateEntered = delegate { };
-        public event Action<GameStateLeftMessage> GameStateLeft = delegate { };
-        public event Action<VesselSituationChangedMessage> VesselSituationChanged = delegate { };
-        public event Action<ModuleController.ModuleType> ModuleReadyToLoad = delegate { };
-
-        public bool InFlightViewState { get; private set; }
-        public bool InOABState { get; private set; }
-        public bool IsFlyingState { get; private set; }
-        public bool IsLandedState { get; private set; }
-        public bool InPreLaunchState { get; private set; }
-        public ConditionsManager(
-            Manager manager,
-            MessageManager messageManager,
-            ModuleController moduleController,
-            LoadModule loadModule,
-            StartModule startModule,
-            ResetModule resetModule)
+        public static ConditionsManager Instance
         {
-            _manager = manager ?? throw new ArgumentNullException(nameof(manager));
-            _messagemanager = messageManager ?? throw new ArgumentNullException(nameof(messageManager));
-            _modulecontroller = moduleController ?? throw new ArgumentNullException(nameof(moduleController));
-            _loadmodule = loadModule ?? throw new ArgumentNullException(nameof(loadModule));
-            _startmodule = startModule ?? throw new ArgumentNullException(nameof(startModule));
-            _resetmodule = resetModule ?? throw new ArgumentNullException(nameof(resetModule));
+            get
+            {
+                lock (_lock)
+                {
+                    return _instance ??= new ConditionsManager(MessageManager.Instance, Logger.CreateLogSource("FFT.ConditionsManager"));
+                }
+            }
+        }
+        internal ConditionsManager(MessageManager messageManager, ManualLogSource logger)
+        {
+            _messageManager = messageManager ?? throw new ArgumentNullException(nameof(messageManager));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            _logger = Logger.CreateLogSource("FFT.ConditionsManager");
-            _messagemanager.GameStateEntered += GameStateEnteredHandler;
-            _messagemanager.GameStateLeft += GameStateLeftHandler;
-            _messagemanager.VesselSituationChanged += HandleVesselSituationChanged;
+            _messageManager.GameStateEntered += GameStateEnteredHandler;
+            _messageManager.GameStateLeft += GameStateLeftHandler;
+            _messageManager.VesselSituationChanged += HandleVesselSituationChanged;
         }
         internal void GameStateEnteredHandler(MessageCenterMessage obj)
         {
-            if (obj is GameStateEnteredMessage gameStateMessage)
+            try
             {
-                Utility.GameState = gameStateMessage.StateBeingEntered;
-                LogGameStateChange($"Entered New GameState: {Utility.GameStateToString(Utility.GameState)}.");
-                GameStateEntered?.Invoke(gameStateMessage);
+                if (obj is GameStateEnteredMessage gameStateMessage)
+                {
+                    Utility.GameState = gameStateMessage.StateBeingEntered;
+                    LogDebug($"Entered New GameState: {Utility.GameStateToString(Utility.GameState)}.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error handling GameStateEntered: {ex}");
             }
         }
         internal void GameStateLeftHandler(MessageCenterMessage obj)
         {
-            if (obj is GameStateLeftMessage gameStateMessage)
+            try
             {
-                Utility.GameState = gameStateMessage.StateBeingLeft;
-                LogGameStateChange($"Left Previous GameState: {Utility.GameStateToString(Utility.GameState)}.");
-                GameStateLeft?.Invoke(gameStateMessage);
+                if (obj is GameStateLeftMessage gameStateMessage)
+                {
+                    Utility.GameState = gameStateMessage.StateBeingLeft;
+                    LogDebug($"Left Previous GameState: {Utility.GameStateToString(Utility.GameState)}.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error handling GameStateLeft: {ex}");
             }
         }
         internal void HandleVesselSituationChanged(VesselSituationChangedMessage msg)
         {
-            LogVesselSituationChange($"Vessel situation changed from {Utility.SituationToString(msg.OldSituation)} to {Utility.SituationToString(msg.NewSituation)}.");
-            VesselSituationChanged?.Invoke(msg);
+            try
+            {
+                LogDebug($"Vessel situation changed from {Utility.SituationToString(msg.OldSituation)} to {Utility.SituationToString(msg.NewSituation)}.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error handling VesselSituationChanged: {ex}");
+            }
         }
         internal bool ConditionsReady()
         {
-            _logger.LogDebug("Checking conditions...");
-
-            InPreLaunchState = Utility.VesselSituations == KSP.Sim.impl.VesselSituations.PreLaunch;
-            IsLandedState = Utility.VesselSituations == KSP.Sim.impl.VesselSituations.Landed;
-            IsFlyingState = Utility.VesselSituations == KSP.Sim.impl.VesselSituations.Flying;
-            InFlightViewState = Utility.GameState == GameState.FlightView;
-            InOABState = Utility.GameState == GameState.VehicleAssemblyBuilder;
-
-            LogStates();
-
-            bool conditionsMet = InPreLaunchState || IsLandedState || IsFlyingState || InFlightViewState || InOABState;
-
-            if (conditionsMet)
+            try
             {
-                LogConditions($"Conditions Ready! Vessel Situation: {Utility.SituationToString(Utility.VesselSituations)}, Game State: {Utility.GameStateToString(Utility.GameState)}.");
+                LogDebug("Checking conditions...");
+
+                bool conditionsMet =
+                    Utility.VesselSituations == KSP.Sim.impl.VesselSituations.PreLaunch ||
+                    Utility.VesselSituations == KSP.Sim.impl.VesselSituations.Landed ||
+                    Utility.VesselSituations == KSP.Sim.impl.VesselSituations.Flying ||
+                    Utility.GameState == GameState.FlightView ||
+                    Utility.GameState == GameState.VehicleAssemblyBuilder;
+
+                LogDebug(conditionsMet
+                    ? $"Conditions Ready! Vessel Situation: {Utility.SituationToString(Utility.VesselSituations)}, Game State: {Utility.GameStateToString(Utility.GameState)}."
+                    : $"Conditions not met: {Utility.SituationToString(Utility.VesselSituations)}, Game State: {Utility.GameStateToString(Utility.GameState)}.");
+
+                return conditionsMet;
             }
-            else
+            catch (Exception ex)
             {
-                LogConditions($"Conditions not met: {Utility.SituationToString(Utility.VesselSituations)}, Game State: {Utility.GameStateToString(Utility.GameState)}.");
-            }
-            return conditionsMet;
-        }
-        private void LogStates()
-        {
-            LogConditionState($"InPreLaunchState: {InPreLaunchState}");
-            LogConditionState($"IsLandedState: {IsLandedState}");
-            LogConditionState($"IsFlyingState: {IsFlyingState}");
-            LogConditionState($"InFlightViewState: {InFlightViewState}");
-            LogConditionState($"InOABState: {InOABState}");
-        }
-        private void LogGameStateChange(string message)
-        {
-            _logger.LogDebug(message);
-        }
-        private void LogVesselSituationChange(string message)
-        {
-            _logger.LogDebug(message);
-        }
-        private void LogConditions(string message)
-        {
-            _logger.LogDebug(message);
-        }
-        public void ResetStates()
-        {
-            if (InPreLaunchState || IsLandedState || IsFlyingState)
-            {
-                InPreLaunchState = false;
-                IsLandedState = false;
-                IsFlyingState = false;
-            }
-            if (InFlightViewState || InOABState)
-            {
-                InFlightViewState = false;
-                InOABState = false;
+                _logger.LogError($"Error checking conditions: {ex}");
+                return false;
             }
         }
-        private void LogConditionState(string message)
+        private void LogDebug(string message)
         {
             _logger.LogDebug(message);
         }

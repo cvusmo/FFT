@@ -9,6 +9,7 @@ using FFT.Managers;
 using FFT.Modules;
 using FFT.Utilities;
 using Newtonsoft.Json;
+using System;
 
 namespace FFT.Controllers
 {
@@ -16,17 +17,34 @@ namespace FFT.Controllers
     public class LoadModule : ILoadModule
     {
         [JsonProperty]
-        public bool EnableVFX { get; set; } = true;
+        public bool EnableVFX { get; private set; } = true;
+
+        private static readonly object _lock = new object();
+        private static LoadModule _instance;
+        public static LoadModule Instance
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    if (_instance == null)
+                    {
+                        _instance = LoadModule.Instance;
+                    }
+                    return _instance;
+                }
+            }
+        }
 
         private readonly ManualLogSource _logger;
-        public Module_VentValve Module_VentValve { get; set; }
-        public FuelTankDefinitions FuelTankDefinitions { get; private set; }
-        public Data_FuelTanks DataFuelTanks { get; private set; }
-        public VentValveDefinitions VentValveDefinitions { get; private set; }
-        public Data_ValveParts DataValveParts { get; private set; }
-        public Data_VentValve DataVentValve { get; private set; }
-        public bool ModuleReadyToLoad { get; private set; }
-        public RefreshVesselData.RefreshActiveVessel RefreshActiveVessel { get; private set; }
+        private Module_VentValve Module_VentValve { get; set; }
+        internal RefreshVesselData.RefreshActiveVessel RefreshActiveVessel => RefreshVesselData.Instance.RefreshActiveVesselInstance;  
+        private FuelTankDefinitions FuelTankDefinitions { get; set; }
+        private Data_FuelTanks DataFuelTanks { get; set; }
+        private VentValveDefinitions VentValveDefinitions { get; set; }
+        private Data_ValveParts DataValveParts { get; set; }
+        private Data_VentValve DataVentValve { get; set; }
+        private bool ModuleReadyToLoad { get; set; }
 
         private readonly Manager _manager;
         private readonly MessageManager _messageManager;
@@ -35,24 +53,21 @@ namespace FFT.Controllers
         private readonly StartModule _startModule;
         private readonly ResetModule _resetModule;
 
-        public event Action ModuleResetRequested = delegate { };
-
-        public LoadModule(
-            Manager manager,
-            MessageManager messageManager,
-            ConditionsManager conditionsManager,
-            ModuleController moduleController,
-            StartModule startModule,
-            ResetModule resetModule,
-            ManualLogSource logger)
+        private event Action _moduleResetRequested;
+        public event Action ModuleResetRequested
         {
-            _manager = manager ?? throw new ArgumentNullException(nameof(manager));
-            _messageManager = messageManager ?? throw new ArgumentNullException(nameof(messageManager));
-            _conditionsManager = conditionsManager ?? throw new ArgumentNullException(nameof(conditionsManager));
-            _moduleController = moduleController ?? throw new ArgumentNullException(nameof(moduleController));
-            _startModule = startModule ?? throw new ArgumentNullException(nameof(startModule));
-            _resetModule = resetModule ?? throw new ArgumentNullException(nameof(resetModule));
-            _logger = logger ?? BepInEx.Logging.Logger.CreateLogSource("LoadModule: ");
+            add
+            {
+                _moduleResetRequested += value;
+            }
+            remove
+            {
+                _moduleResetRequested -= value;
+            }
+        }
+        private LoadModule(MessageManager _messageManager)
+        {
+            _logger = BepInEx.Logging.Logger.CreateLogSource("LoadModule: ");
         }
         public void Boot()
         {
@@ -93,6 +108,5 @@ namespace FFT.Controllers
                 _moduleController.IsModuleLoaded = true;
             }
         }
-
     }
 }

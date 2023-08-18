@@ -5,60 +5,33 @@
 
 using FFT.Managers;
 using KSP.Game;
-using KSP.Messages;
-using KSP.Sim.DeltaV;
 using KSP.Sim.impl;
-using KSP.Sim.Maneuver;
+using System;
+using System.Collections.Generic;
 
 namespace FFT.Utilities
 {
     public class RefreshVesselData
     {
-        private static RefreshVesselData _instance;
-        private static RefreshActiveVessel _instanceRAV;
-        public VesselComponent VesselComponent;
-        public CelestialBodyComponent CelestialBodyComponent;
-        public ManeuverNodeData CurrentManeuver;
-        public MessageCenter MessageCenter;
-        public VesselDeltaVComponent VesselDeltaVComponentOAB;
-        public GameStateConfiguration GameStateConfig;
-        public static double UniversalTime => GameManager.Instance.Game.UniverseModel.UniversalTime;
-        public VesselComponent activeVessel { get; set; }
-        public RefreshActiveVessel refreshActiveVessel { get; set; }
-        public AltitudeAgl altitudeAgl { get; private set; }
-        public AltitudeAsl altitudeAsl { get; private set; }
-        public AltitudeFromScenery altitudeFromScenery { get; private set; }
-        public VerticalVelocity verticalVelocity { get; private set; }
-        public HorizontalVelocity horizontalVelocity { get; private set; }
-        public DynamicPressure_kPa dynamicPressure_KPa { get; private set; }
-        public StaticPressure_kPa staticPressure_KPa { get; private set; }
-        public AtmosphericTemperature atmosphericTemperature { get; private set; }
-        public ExternalTemperature externalTemperature { get; private set; }
-        public FuelPercentage fuelPercentage { get; private set; }
-        public IsInAtmosphere isInAtmosphere { get; private set; }
-        internal Manager Manager { get; private set; }
-        internal static RefreshActiveVessel InstanceRAV
-        {
-            get
-            {
-                if (_instanceRAV == null)
-                    _instanceRAV = new RefreshActiveVessel();
+        private static readonly Lazy<RefreshVesselData> _instance = new Lazy<RefreshVesselData>(() => new RefreshVesselData());
+        public static RefreshVesselData Instance => _instance.Value;
 
-                return _instanceRAV;
+        private DateTime _lastRefreshTime;
+        private readonly TimeSpan _refreshInterval = TimeSpan.FromSeconds(3);
+        private Dictionary<string, object> _cache = new Dictionary<string, object>();
+        public RefreshActiveVessel RefreshActiveVesselInstance { get; } = new RefreshActiveVessel();
+        internal RefreshVesselData() => RefreshActiveVesselInstance.RefreshData();
+        public T GetCachedValue<T>(string key, Func<VesselComponent, T> fetchValue)
+        {
+            if (_cache.ContainsKey(key) && DateTime.UtcNow - _lastRefreshTime <= _refreshInterval)
+            {
+                return (T)_cache[key];
             }
-        }
-        public static bool IsFlightActive()
-        {
-            return InstanceRAV.IsFlightActive;
-        }
-        internal static RefreshVesselData Instance
-        {
-            get
+            else
             {
-                if (_instance == null)
-                    _instance = new RefreshVesselData();
-
-                return _instance;
+                var value = fetchValue(RefreshActiveVesselInstance.ActiveVessel);
+                _cache[key] = value;
+                return value;
             }
         }
         public class RefreshActiveVessel
@@ -72,134 +45,16 @@ namespace FFT.Utilities
                 IsFlightActive = true;
             }
         }
-        public class AltitudeAgl
-        {
-            public double altitudeAgl { get; private set; }
-
-            public void RefreshData(VesselComponent activeVessel)
-            {
-                altitudeAgl = activeVessel.AltitudeFromScenery;
-            }
-        }
-        public class AltitudeAsl
-        {
-            public double altitudeAsl { get; private set; }
-
-            public void RefreshData(VesselComponent activeVessel)
-            {
-                altitudeAsl = activeVessel.AltitudeFromSeaLevel;
-            }
-        }
-        public class AltitudeFromScenery
-        {
-            public double altitudeFromScenery { get; private set; }
-
-            public void RefreshData(VesselComponent activeVessel)
-            {
-                altitudeFromScenery = activeVessel.AltitudeFromTerrain;
-            }
-        }
-        public class VerticalVelocity
-        {
-            public double verticalVelocity { get; private set; }
-
-            public void RefreshData(VesselComponent activeVessel)
-            {
-                verticalVelocity = activeVessel.VerticalSrfSpeed;
-            }
-        }
-        public class HorizontalVelocity
-        {
-            public double horizontalVelocity { get; private set; }
-
-            public void RefreshData(VesselComponent activeVessel)
-            {
-                horizontalVelocity = activeVessel.HorizontalSrfSpeed;
-            }
-        }
-        public class DynamicPressure_kPa
-        {
-            public double dynamicPressure_kPa { get; private set; }
-
-            public void RefreshData(VesselComponent activeVessel)
-            {
-                dynamicPressure_kPa = activeVessel.DynamicPressure_kPa;
-            }
-        }
-        public class StaticPressure_kPa
-        {
-            public double staticPressure_kPa { get; private set; }
-
-            public void RefreshData(VesselComponent activeVessel)
-            {
-                staticPressure_kPa = activeVessel.StaticPressure_kPa;
-            }
-        }
-        public class AtmosphericTemperature
-        {
-            public double atmosphericTemperature { get; private set; }
-
-            public void RefreshData(VesselComponent activeVessel)
-            {
-                atmosphericTemperature = activeVessel.AtmosphericTemperature;
-            }
-        }
-        public class ExternalTemperature
-        {
-            public double externalTemperature { get; private set; }
-
-            public void RefreshData(VesselComponent activeVessel)
-            {
-                externalTemperature = activeVessel.ExternalTemperature;
-            }
-        }
-        public class IsInAtmosphere
-        {
-            public bool isInAtmosphere { get; private set; }
-
-            public void RefreshData(VesselComponent activeVessel)
-            {
-                isInAtmosphere = activeVessel.IsInAtmosphere;
-            }
-        }
-        public class FuelPercentage
-        {
-            public double fuelPercentage { get; private set; }
-            public void RefreshData(VesselComponent activeVessel)
-            {
-                fuelPercentage = activeVessel.FuelPercentage;
-                //fuelCheck = activeVessel.StageFuelPercentage;
-            }
-        }
-        public RefreshVesselData()
-        {
-            refreshActiveVessel = new RefreshActiveVessel();
-            altitudeAgl = new AltitudeAgl();
-            altitudeAsl = new AltitudeAsl();
-            altitudeFromScenery = new AltitudeFromScenery();
-            verticalVelocity = new VerticalVelocity();
-            horizontalVelocity = new HorizontalVelocity();
-            dynamicPressure_KPa = new DynamicPressure_kPa();
-            staticPressure_KPa = new StaticPressure_kPa();
-            atmosphericTemperature = new AtmosphericTemperature();
-            externalTemperature = new ExternalTemperature();
-            isInAtmosphere = new IsInAtmosphere();
-            fuelPercentage = new FuelPercentage();
-        }
-        public void RefreshAll(VesselComponent activeVessel)
-        {
-            refreshActiveVessel.RefreshData();
-            altitudeAgl.RefreshData(activeVessel);
-            altitudeAsl.RefreshData(activeVessel);
-            altitudeFromScenery.RefreshData(activeVessel);
-            verticalVelocity.RefreshData(activeVessel);
-            horizontalVelocity.RefreshData(activeVessel);
-            dynamicPressure_KPa.RefreshData(activeVessel);
-            staticPressure_KPa.RefreshData(activeVessel);
-            atmosphericTemperature.RefreshData(activeVessel);
-            externalTemperature.RefreshData(activeVessel);
-            isInAtmosphere.RefreshData(activeVessel);
-            fuelPercentage.RefreshData(activeVessel);
-        }
+        public double AltitudeAgl => GetCachedValue("AltitudeAgl", vessel => vessel.AltitudeFromScenery);
+        public double AltitudeAsl => GetCachedValue("AltitudeAsl", vessel => vessel.AltitudeFromSeaLevel);
+        public double AltitudeFromScenery => GetCachedValue("AltitudeFromScenery", vessel => vessel.AltitudeFromTerrain);
+        public double VerticalVelocity => GetCachedValue("VerticalVelocity", vessel => vessel.VerticalSrfSpeed);
+        public double HorizontalVelocity => GetCachedValue("HorizontalVelocity", vessel => vessel.HorizontalSrfSpeed);
+        public double DynamicPressure_kPa => GetCachedValue("DynamicPressure_kPa", vessel => vessel.DynamicPressure_kPa);
+        public double StaticPressure_kPa => GetCachedValue("StaticPressure_kPa", vessel => vessel.StaticPressure_kPa);
+        public double AtmosphericTemperature => GetCachedValue("AtmosphericTemperature", vessel => vessel.AtmosphericTemperature);
+        public double ExternalTemperature => GetCachedValue("ExternalTemperature", vessel => vessel.ExternalTemperature);
+        public bool IsInAtmosphere => GetCachedValue("IsInAtmosphere", vessel => vessel.IsInAtmosphere);
+        public double FuelPercentage => GetCachedValue("FuelPercentage", vessel => vessel.FuelPercentage);
     }
 }
