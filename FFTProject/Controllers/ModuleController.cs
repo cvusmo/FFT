@@ -12,7 +12,7 @@ namespace FFT.Controllers
     public class ModuleController
     {
         private Dictionary<ModuleType, bool> moduleStates = new Dictionary<ModuleType, bool>();
-        private ILoadModule loadModule;
+        private IModuleController moduleController;
         public enum ModuleType
         {
             Default = 00,
@@ -24,9 +24,9 @@ namespace FFT.Controllers
         }
         public bool IsModuleLoaded { get; set; }
         public bool ShouldResetModule { get; set; }
-        public ModuleController(ILoadModule loadModule)
+        public ModuleController(IModuleController moduleController)
         {
-            this.loadModule = loadModule;
+            this.moduleController = moduleController;
             InitializeModuleStates();
         }
         private void InitializeModuleStates()
@@ -66,6 +66,6 @@ namespace FFT.Controllers
 
             IsModuleLoaded = false;
             ShouldResetModule = false;
-        }
+        } 
     }
 }

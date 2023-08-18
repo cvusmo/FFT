@@ -19,6 +19,7 @@ namespace FFT.Controllers
         public bool EnableVFX { get; set; } = true;
 
         private readonly ManualLogSource _logger;
+        public Module_VentValve Module_VentValve { get; set; }
         public FuelTankDefinitions FuelTankDefinitions { get; private set; }
         public Data_FuelTanks DataFuelTanks { get; private set; }
         public VentValveDefinitions VentValveDefinitions { get; private set; }
@@ -55,6 +56,7 @@ namespace FFT.Controllers
         }
         public void Boot()
         {
+            Utility.RefreshGameManager();
             if (RefreshActiveVessel.IsFlightActive && EnableVFX)
             {
                 _logger.LogInfo("Booting Module_VentValve");
@@ -70,18 +72,18 @@ namespace FFT.Controllers
         public void PreLoad()
         {
             Utility.RefreshGameManager();
-
             if (_moduleController.GetModuleState(ModuleController.ModuleType.ModuleVentValve))
             {
-                InitializeModuleComponents();
                 _logger.LogInfo("Preloading Module_VentValve");
+                Module_VentValve.InitializeData();
+                Module_VentValve.InitializeVFX();
+                Load();
             }
 
-            Load();
         }
-
         public void Load()
         {
+            Utility.RefreshGameManager();
             if (RefreshActiveVessel.IsFlightActive && _moduleController.GetModuleState(ModuleController.ModuleType.ModuleVentValve))
             {
                 _logger.LogInfo("Loading Module_VentValve");
@@ -91,25 +93,6 @@ namespace FFT.Controllers
                 _moduleController.IsModuleLoaded = true;
             }
         }
-        public void InitializeModuleComponents()
-        {
-            if (FuelTankDefinitions == null)
-            {
-                FuelTankDefinitions = UnityEngine.Object.FindObjectOfType<FuelTankDefinitions>();
-            }
-            if (FuelTankDefinitions != null && DataFuelTanks != null)
-            {
-                FuelTankDefinitions.PopulateFuelTanks(DataFuelTanks);
-            }
 
-            if (VentValveDefinitions == null)
-            {
-                VentValveDefinitions = UnityEngine.Object.FindObjectOfType<VentValveDefinitions>();
-            }
-            if (VentValveDefinitions != null && DataValveParts != null)
-            {
-                VentValveDefinitions.PopulateVentValve(DataValveParts);
-            }
-        }
     }
 }

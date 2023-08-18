@@ -3,6 +3,7 @@
 //|by cvusmo===========================================|4|
 //|====================================================|1|
 
+using FFT.Controllers.Interfaces;
 using FFT.Managers;
 using FFT.Utilities;
 using Newtonsoft.Json;
@@ -11,7 +12,7 @@ using System;
 namespace FFT.Controllers
 {
     [JsonObject(MemberSerialization.OptIn)]
-    public class ResetModule
+    public class ResetModule : IResetModule
     {
         public event Action ModuleResetRequested = delegate { };
 
@@ -28,6 +29,7 @@ namespace FFT.Controllers
             _manager = manager ?? throw new ArgumentNullException(nameof(manager));
             _modulecontroller = moduleController ?? throw new ArgumentNullException(nameof(moduleController));
         }
+
         public void Reset()
         {
             if (!_modulecontroller.ShouldResetModule) return;
@@ -42,6 +44,7 @@ namespace FFT.Controllers
             _modulecontroller.ShouldResetModule = false;
             _modulecontroller.IsModuleLoaded = false;
         }
+
         public void Unload()
         {
             if (!RefreshVesselData.IsFlightActive())

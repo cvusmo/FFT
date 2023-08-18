@@ -1,14 +1,4 @@
-﻿//|=====================Summary========================|0|
-//|                Main plugin for FFT                 |1|
-//|by cvusmo===========================================|4|
-//|====================================================|1|
-
-//|=====================Summary========================|0|
-//|                Main plugin for FFT                 |1|
-//|by cvusmo===========================================|4|
-//|====================================================|1|
-
-using BepInEx;
+﻿using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using FFT.Controllers;
@@ -22,22 +12,19 @@ namespace FFT
 {
     [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
     [BepInDependency(SpaceWarpPlugin.ModGuid, SpaceWarpPlugin.ModVer)]
-    public class FFTPlugin : BaseSpaceWarpPlugin
+    public class FFTPlugin : BaseSpaceWarpPlugin, IModuleController
     {
-        public ConfigEntry<bool> FFTConfig { get; private set; }
-        public string Path { get; private set; }
-
         private readonly ManualLogSource _logger;
+
         public FFTPlugin(
             ManualLogSource logger,
             Manager manager,
             ConditionsManager conditionsManager,
             MessageManager messageManager,
-            LoadModule loadModule,
+            ILoadModule loadModule,
             StartModule startModule,
             ResetModule resetModule,
             ModuleController moduleController,
-            ILoadModule iLoadModule,
             Module_VentValve moduleVentValve,
             RefreshVesselData refreshVesselData)
         {
@@ -45,57 +32,76 @@ namespace FFT
             Manager = manager;
             ConditionsManager = conditionsManager;
             MessageManager = messageManager;
-            LoadModule = loadModule;
+            LoadModule = (LoadModule)loadModule;
             StartModule = startModule;
             ResetModule = resetModule;
             ModuleController = moduleController;
-            ILoadModule = iLoadModule;
             ModuleVentValve = moduleVentValve;
             RefreshVesselData = refreshVesselData;
 
             Initialize();
         }
-        internal Manager Manager { get; }
-        internal ConditionsManager ConditionsManager { get; }
-        internal MessageManager MessageManager { get; }
-        internal LoadModule LoadModule { get; }
-        internal StartModule StartModule { get; }
-        internal ResetModule ResetModule { get; }
-        internal ModuleController ModuleController { get; }
-        internal ILoadModule ILoadModule { get; }
-        internal Module_VentValve ModuleVentValve { get; }
-        internal RefreshVesselData RefreshVesselData { get; }
-        private void Initialize()
-        {
-            _logger.LogInfo("Initializing FFTPlugin...");
-
-            Utilities.Utility.Initialize();
-
-            MessageManager.SubscribeToMessages();
-            _logger.LogInfo("Subscribed to messages.");
-        }
+        internal Manager Manager { get; private set; }
+        internal ConditionsManager ConditionsManager { get; private set; }
+        internal MessageManager MessageManager { get; private set; }
+        internal LoadModule LoadModule { get; private set; }
+        internal StartModule StartModule { get; private set; }
+        internal ResetModule ResetModule { get; private set; }
+        internal ModuleController ModuleController { get; private set; }
+        internal Module_VentValve ModuleVentValve { get; private set; }
+        internal RefreshVesselData RefreshVesselData { get; private set; }
         public override void OnPreInitialized()
         {
-            Path = this.PluginFolderPath;
+            base.OnPreInitialized();
             _logger.LogDebug("FFTPlugin OnPreInitialized called.");
         }
         public override void OnInitialized()
         {
             base.OnInitialized();
-            FFTConfig = Config.Bind(
+            _logger.LogInfo("Initializing FFTPlugin...");
+
+            InitializeDependencies();
+            InitializeConfig();
+
+            MessageManager.SubscribeToMessages();
+            Manager.Update();
+            _logger.LogInfo("Subscribed to messages.");
+        }
+        public void SetLoadModule(ILoadModule loadModule)
+        {
+            LoadModule = (LoadModule)loadModule;
+        }
+        private void InitializeDependencies()
+        {
+            ModuleController = new ModuleController(this);
+            ConditionsManager = new ConditionsManager(Manager, MessageManager, ModuleController, LoadModule, StartModule, ResetModule);
+            LoadModule = new LoadModule(Manager, MessageManager, ConditionsManager, ModuleController, StartModule, ResetModule, _logger);
+            StartModule = new StartModule(_logger, ModuleController, ModuleVentValve);
+            ResetModule = new ResetModule(ConditionsManager, Manager, ModuleController);
+            Manager = new Manager(StartModule, MessageManager, ModuleController, LoadModule);
+            RefreshVesselData = new RefreshVesselData();
+            ModuleVentValve = new Module_VentValve();
+        }
+        private void InitializeConfig()
+        {
+            Config.Bind(
                 "Fancy Fuel Tanks Settings",
                 "Enable VFX",
                 LoadModule.EnableVFX = true,
                 "Fancy Fuel Tanks adds Dynamic Environmental Effects to fuel tanks"
             );
-
-            UpdateManager();
         }
-        private void UpdateManager()
+        private void Initialize()
         {
-            Manager.Update();
-            _logger.LogInfo("Manager.Update() is called");
+            _logger.LogInfo("Initializing FFTPlugin...");
+            //Utilities.Utility.Initialize();
+            MessageManager.SubscribeToMessages();
+            _logger.LogInfo("Subscribed to messages.");
         }
-        public override void OnPostInitialized() => base.OnPostInitialized();
+        public override void OnPostInitialized()
+        {
+            base.OnPostInitialized();
+            _logger.LogInfo("FFTPlugin OnPostInitialized called.");
+        }
     }
 }

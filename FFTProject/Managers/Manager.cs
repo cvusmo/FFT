@@ -2,28 +2,22 @@
 //|                   Switchboard                      |1|
 //|by cvusmo===========================================|4|
 //|====================================================|1|
-
 using BepInEx.Logging;
 using FFT.Controllers;
-using FFT.Modules;
 using FFT.Utilities;
 using KSP.Game;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace FFT.Managers
 {
     public class Manager
     {
-        internal List<LoadModule> Modules { get; private set; } = new List<LoadModule>();
-        internal ManualLogSource Logger { get; private set; }
-        internal event Action<Module_VentValve> ModuleActivationRequested = delegate { };
-
+        private List<LoadModule> Modules { get; } = new List<LoadModule>();
+        internal ManualLogSource Logger { get; }
         private readonly StartModule _startmodule;
         private readonly MessageManager _messageManager;
         private readonly ModuleController _moduleController;
         private readonly LoadModule _loadModule;
+
         public Manager(
             StartModule startmodule,
             MessageManager messageManager,
@@ -35,7 +29,7 @@ namespace FFT.Managers
             _moduleController = moduleController ?? throw new ArgumentNullException(nameof(moduleController));
             _loadModule = loadModule ?? throw new ArgumentNullException(nameof(loadModule));
 
-            Logger = BepInEx.Logging.Logger.CreateLogSource("Manager: ");
+            Logger = BepInEx.Logging.Logger.CreateLogSource("FFT.Manager: ");
             _messageManager.ModuleReadyToLoad += HandleModuleReadyToLoad;
         }
         public void Update()
@@ -53,8 +47,7 @@ namespace FFT.Managers
         }
         internal List<LoadModule> InitializeModules()
         {
-            List<LoadModule> localModules = new List<LoadModule> { _loadModule };
-            return localModules;
+            return new List<LoadModule> { _loadModule };
         }
         internal void OnModuleReset()
         {
@@ -63,7 +56,7 @@ namespace FFT.Managers
         }
         public void HandleModuleReadyToLoad(ModuleController.ModuleType moduleType)
         {
-            if (StartingModule())
+            if (IsStartingModule())
             {
                 _startmodule.StartVentValve();
                 if (Utility.ActiveVessel == null)
@@ -72,7 +65,7 @@ namespace FFT.Managers
                 }
             }
         }
-        internal bool StartingModule()
+        internal bool IsStartingModule()
         {
             bool isFlightActive = Modules.FirstOrDefault()?.RefreshActiveVessel?.IsFlightActive ?? false;
             return (Utility.GameState == GameState.FlightView && isFlightActive);

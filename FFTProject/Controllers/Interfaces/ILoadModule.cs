@@ -5,7 +5,6 @@
         void Boot();
         void PreLoad();
         void Load();
-        void InitializeModuleComponents();
     }
     public interface IResetModule
     {
@@ -18,5 +17,4 @@
         void ActivateModule(ModuleController.ModuleType moduleType);
         void DeactivateModule(ModuleController.ModuleType moduleType);
     }
-
 }

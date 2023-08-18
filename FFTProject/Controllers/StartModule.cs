@@ -12,7 +12,7 @@ using BepInEx.Logging;
 namespace FFT.Controllers
 {
     [JsonObject(MemberSerialization.OptIn)]
-    public class StartModule
+    public class StartModule : IStartModule
     {
         private readonly ManualLogSource _logger;
         private readonly ModuleController _moduleController;
@@ -27,7 +27,8 @@ namespace FFT.Controllers
             _moduleController = moduleController ?? throw new ArgumentNullException(nameof(moduleController));
             ModuleVentValve = moduleVentValve ?? throw new ArgumentNullException(nameof(moduleVentValve));
         }
-        internal void StartVentValve()
+
+        public void StartVentValve()
         {
             Utility.RefreshActiveVesselAndCurrentManeuver();
 
@@ -40,7 +41,8 @@ namespace FFT.Controllers
             if (Utility.ActiveVessel == null)
                 return;
         }
-        internal void ActivateModule(ModuleController.ModuleType moduleType)
+
+        public void ActivateModule(ModuleController.ModuleType moduleType)
         {
             if (moduleType == ModuleController.ModuleType.ModuleVentValve && ModuleVentValve != null)
             {
@@ -48,7 +50,8 @@ namespace FFT.Controllers
                 _logger.LogInfo("ActivateModule called");
             }
         }
-        internal void DeactivateModule(ModuleController.ModuleType moduleType)
+
+        public void DeactivateModule(ModuleController.ModuleType moduleType)
         {
             if (moduleType == ModuleController.ModuleType.ModuleVentValve && ModuleVentValve != null)
             {

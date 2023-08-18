@@ -4,6 +4,7 @@
 //|====================================================|1|
 
 using BepInEx.Logging;
+using FFT;
 using FFT.Controllers;
 using FFT.Managers;
 using FFT.Modules;
@@ -17,60 +18,96 @@ public class Module_VentValve : PartBehaviourModule
 {
     public override Type PartComponentModuleType => typeof(PartComponentModule_VentValve);
 
-    [SerializeField]
-    public Data_VentValve DataVentValve;
-    [SerializeField]
-    public GameObject VentValveVFX;
-    [SerializeField]
-    public GameObject CoolingVFX;
-    internal RefreshVesselData RefreshVesselData { get; private set; }
-    internal Data_FuelTanks DataFuelTanks;
-    internal Animator Animator;
-    internal ParticleSystem PSVentValveVFX, PSCoolingVFX;
-    internal DynamicGravityForVFX DynamicGravityVent, DynamicGravityCooling;
+    [SerializeField] private Data_VentValve DataVentValve;
+    [SerializeField] private GameObject VentValveVFX;
+    [SerializeField] private GameObject CoolingVFX;
 
-    private readonly ConditionsManager _conditionsManager;
+    private RefreshVesselData RefreshVesselData { get; set; }
+    private Animator Animator;
+    private ParticleSystem PSVentValveVFX, PSCoolingVFX;
+    private DynamicGravityForVFX DynamicGravityVent, DynamicGravityCooling;
+
     private readonly ManualLogSource _logger = MVV.CreateLogSource("FFT.Module_VentValve: ");
     private ModuleController _moduleController;
+    private ConditionsManager _conditionsManager;
 
-    internal delegate void ModuleActivationChangedHandler(bool isActive);
-    internal event ModuleActivationChangedHandler OnModuleActivationChanged;
-    internal event Action VFXConditionsMet = delegate { };
+    private delegate void ModuleActivationChangedHandler(bool isActive);
+    private event ModuleActivationChangedHandler OnModuleActivationChanged;
+    private event System.Action VFXConditionsMet = delegate { };
 
-    internal float ASL, AGL, VV, HV, DP, SP, AT, ET, FL;
-    internal bool InAtmo = true;
-    internal bool ActivateModule;
-    internal bool isVFXActive = false;
-    internal bool wasActive = true;
+    public FuelTankDefinitions FuelTankDefinitions { get; private set; }
+    public VentValveDefinitions VentValveDefinitions { get; private set; }
+    public Data_FuelTanks DataFuelTanks { get; private set; } = new Data_FuelTanks(); 
+    public Data_ValveParts DataValveParts { get; private set; }
+
+    private float ASL, AGL, VV, HV, DP, SP, AT, ET, FL;
+    private bool InAtmo = true;
+    private bool ActivateModule;
+    private bool isVFXActive = false;
+    private bool wasActive = true;
 
     private float updateFrequency = 0.5f;
     private float timeSinceLastUpdate = 0.0f;
 
-    public Module_VentValve(ConditionsManager conditionsManager)
+    public Module_VentValve()
     {
-        _conditionsManager = conditionsManager ?? throw new ArgumentNullException(nameof(conditionsManager));
     }
     public override void OnInitialize()
     {
         base.OnInitialize();
-
         InitializeData();
-
         if (PartBackingMode == PartBackingModes.Flight)
         {
             InitializeVFX();
         }
     }
-    private void InitializeData()
+    public override void AddDataModules()
     {
-        if (DataVentValve == null)
+        base.AddDataModules();
+
+        if (this.DataVentValve == null)
         {
-            DataVentValve = new Data_VentValve();
-            this.DataModules.TryAddUnique<Data_VentValve>(DataVentValve, out DataVentValve);
+            this.DataVentValve = new Data_VentValve();
+            this.DataModules.TryAddUnique<Data_VentValve>(this.DataVentValve, out this.DataVentValve);
         }
+        if (this.DataFuelTanks == null)
+        {
+            //this.DataFuelTanks ??= new Data_FuelTanks();
+            //this.DataModules.TryAddUnique<Data_FuelTanks>(this.DataFuelTanks, out this.DataFuelTanks);
+        }
+    }
+    internal void InitializeData()
+    {
+
+        if (FuelTankDefinitions == null)
+        {
+            FuelTankDefinitions = UnityEngine.Object.FindObjectOfType<FuelTankDefinitions>();
+        }
+        if (FuelTankDefinitions != null && DataFuelTanks != null)
+        {
+            FuelTankDefinitions.PopulateFuelTanks(DataFuelTanks);
+        }
+
+        if (VentValveDefinitions == null)
+        {
+            VentValveDefinitions = UnityEngine.Object.FindObjectOfType<VentValveDefinitions>();
+        }
+        if (VentValveDefinitions != null && DataValveParts != null)
+        {
+            VentValveDefinitions.PopulateVentValve(DataValveParts);
+        }
+        InitializeVFX();
     }
     internal void InitializeVFX()
     {
+        if (_conditionsManager != null && _logger != null)
+        {
+            _logger.LogInfo("Module_VentValveVFX has started.");
+        }
+        else
+        {
+            throw new System.InvalidOperationException("Manager or its logger was not properly initialized.");
+        }
         if (VentValveVFX != null)
         {
             PSVentValveVFX = VentValveVFX.GetComponentInChildren<ParticleSystem>();
@@ -83,14 +120,8 @@ public class Module_VentValve : PartBehaviourModule
             DynamicGravityCooling = CoolingVFX.GetComponentInParent<DynamicGravityForVFX>();
         }
 
-        if (_conditionsManager != null && _logger != null)
-        {
-            _logger.LogInfo("Module_VentValveVFX has started.");
-        }
-        else
-        {
-            throw new InvalidOperationException("Manager or its logger was not properly initialized.");
-        }
+        RefreshVesselData = new RefreshVesselData();
+        Animator = GetComponentInParent<Animator>();
     }
     public override void OnModuleFixedUpdate(float fixedDeltaTime)
     {
@@ -101,17 +132,31 @@ public class Module_VentValve : PartBehaviourModule
 
         if (timeSinceLastUpdate >= updateFrequency)
         {
-            RefreshVesselData.refreshActiveVessel.RefreshData();
-            var activeVessel = RefreshVesselData.refreshActiveVessel.ActiveVessel;
-            RefreshVesselData.RefreshAll(activeVessel);
-
-            UpdateVFX();
-
+            RefreshDataAndVFX();
             timeSinceLastUpdate = 0.0f;
         }
     }
-    private float GetCurveValue(AnimationCurve curve, float inputValue) => curve.Evaluate(inputValue);
-    internal void UpdateVFX()
+    private void RefreshDataAndVFX()
+    {
+        RefreshVesselData.refreshActiveVessel.RefreshData();
+        var activeVessel = RefreshVesselData.refreshActiveVessel.ActiveVessel;
+        RefreshVesselData.RefreshAll(activeVessel);
+
+        InitializeData();
+        InitializeVFX();
+        UpdateVFX();
+    }
+    private float GetCurveValue(AnimationCurve curve, float inputValue)
+    {
+        if (curve == null)
+        {
+            Debug.LogWarning("Curve is null. Defaulting to 0.");
+            return 0f;
+        }
+
+        return curve.Evaluate(inputValue);
+    }
+    private void UpdateVFX()
     {
         ASL = GetCurveValue(DataVentValve.VFXASLCurve, (float)RefreshVesselData.altitudeAsl.altitudeAsl);
         Animator.SetFloat("ASL", ASL);
@@ -156,7 +201,6 @@ public class Module_VentValve : PartBehaviourModule
         {
             Deactivate();
         }
-
     }
     private void ManageParticleSystem(ParticleSystem ps, DynamicGravityForVFX dynamicGravity, bool state)
     {
