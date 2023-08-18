@@ -7,52 +7,51 @@ using FFT.Controllers;
 using FFT.Utilities;
 using KSP.Game;
 using KSP.Messages;
+using FFT.Controllers.Interfaces;
+using System.Collections.Generic;
+using static FFT.Controllers.ModuleController;
 
 namespace FFT.Managers
 {
     public class MessageManager : RefreshVesselData
     {
-        internal ManualLogSource _logger = Logger.CreateLogSource("FFT.MessageManager");
-        internal static ManualLogSource _logger2 = Logger.CreateLogSource("FFT.Listener");
+        internal static ManualLogSource _logger = Logger.CreateLogSource("FFT.MessageManager");
+
         internal event Action HandleGameStateActions = delegate { };
         internal event Action VesselStateChangedEvent = delegate { };
-        internal event Action<ModuleEnums.ModuleType> ModuleReadyToLoad = delegate { };
+        internal event Action<ModuleType> ModuleReadyToLoad = delegate { };
 
-        internal Manager manager => Manager.Instance;
-        internal ConditionsManager conditionsmanager => ConditionsManager.Instance;
-        internal ModuleEnums moduleenums => ModuleEnums.Instance;
-        internal LoadModule loadmodule => LoadModule.Instance;
-        internal StartModule startmodule => StartModule.Instance;
-        internal ResetModule resetmodule => ResetModule.Instance;
+        private readonly Manager _manager;
+        private readonly ConditionsManager _conditionsmanager;
+        private readonly ModuleController _modulecontroller;
+        private readonly ILoadModule _loadmodule;
+        private readonly IStartModule _startmodule;
+        private readonly IResetModule _resetmodule;
 
+        public Dictionary<ModuleType, Action> ModuleListeners { get; private set; } = new Dictionary<ModuleType, Action>
+        {
+            { ModuleType.ModuleVentValve, () => { _logger.LogDebug("Listening to ModuleVentValve."); } }
+        };
 
-        private static readonly Lazy<MessageManager> _lazyInstance = new Lazy<MessageManager>(() => new MessageManager());
-        public static MessageManager Instance => _lazyInstance.Value;
-        private MessageManager() { }
+        public MessageManager(Manager manager, ConditionsManager conditionsManager, ModuleController moduleController, ILoadModule loadModule, IStartModule startModule, IResetModule resetModule)
+        {
+            _manager = manager;
+            _conditionsmanager = conditionsManager;
+            _loadmodule = loadModule;
+            _startmodule = startModule;
+            _resetmodule = resetModule;
+        }
         public void SubscribeToMessages()
         {
             _logger.LogDebug($"Subscribing To Messages... ");
             Utility.RefreshGameManager();
-            Utility.MessageCenter.Subscribe<GameStateEnteredMessage>(msg => conditionsmanager.GameStateEnteredHandler((GameStateEnteredMessage)msg));
-            Utility.MessageCenter.Subscribe<GameStateLeftMessage>(msg => conditionsmanager.GameStateLeftHandler((GameStateLeftMessage)msg));
-            Utility.MessageCenter.Subscribe<VesselSituationChangedMessage>(msg => conditionsmanager.HandleVesselSituationChanged((VesselSituationChangedMessage)msg));
+            Utility.MessageCenter.Subscribe<GameStateEnteredMessage>(msg => _conditionsmanager.GameStateEnteredHandler((GameStateEnteredMessage)msg));
+            Utility.MessageCenter.Subscribe<GameStateLeftMessage>(msg => _conditionsmanager.GameStateLeftHandler((GameStateLeftMessage)msg));
+            Utility.MessageCenter.Subscribe<VesselSituationChangedMessage>(msg => _conditionsmanager.HandleVesselSituationChanged((VesselSituationChangedMessage)msg));
             _logger.LogDebug($"Subscribed to: {nameof(GameStateEnteredMessage)}, {nameof(GameStateLeftMessage)}, {nameof(VesselSituationChangedMessage)}");
 
             ModuleReadyToLoad += HandleModuleReadyToLoad;
             _logger.LogDebug("Subscribed to ModuleReadyToLoad event.");
-        }
-        static MessageManager()
-        {
-            ModuleEnums.moduleListeners[ModuleEnums.ModuleType.ModuleVentValve] = () => { _logger2.LogDebug("Listening to ModuleVentValve."); };
-            //ModuleEnums.moduleListeners[ModuleEnums.ModuleType.ModuleOne] = () => { /* ModuleOne's listening logic here */ };
-        }
-        internal ModuleEnums.ModuleType GetCurrentModule(ModuleEnums.ModuleType moduleType)
-        {
-            return ModuleEnums.CurrentModule;
-        }
-        internal void SetCurrentModule(ModuleEnums.ModuleType moduleType)
-        {
-            ModuleEnums.CurrentModule = moduleType;
         }
         internal void Update()
         {
@@ -66,12 +65,12 @@ namespace FFT.Managers
                     return;
             }
         }
-        internal bool StartListening(ModuleEnums.ModuleType moduleType)
+        internal bool StartListening(ModuleType moduleType)
         {
-            if (ModuleEnums.moduleListeners.TryGetValue(moduleType, out Action listenerAction))
+            if (ModuleListeners.TryGetValue(moduleType, out Action listenerAction))
             {
                 listenerAction.Invoke();
-                ModuleEnums.IsVentValve = true;
+                _modulecontroller.SetModuleState(moduleType, true);
                 return true;
             }
             return false;
@@ -79,36 +78,35 @@ namespace FFT.Managers
         internal bool CheckAndUpdateManager()
         {
             _logger.LogDebug("CheckAndUpdateManager triggered.");
-            if (conditionsmanager.ConditionsReady())
+            if (_conditionsmanager.ConditionsReady())
             {
-                Manager.Instance.Update();
+                _manager.Update();
                 return true;
             }
             return false;
         }
-        internal void HandleModuleReadyToLoad(ModuleEnums.ModuleType moduleType)
+        internal void HandleModuleReadyToLoad(ModuleType moduleType)
         {
             _logger.LogDebug("HandleModuleReadyToLoad triggered.");
             Utility.RefreshGameManager();
 
-            var currentModuleType = GetCurrentModule(moduleType);
-            bool isModuleTypeFound = StartListening(currentModuleType);
+            bool isModuleTypeFound = StartListening(moduleType);
 
             if (!isModuleTypeFound) return;
 
             if (CheckAndUpdateManager())
             {
-                if (ModuleEnums.IsVentValve)
+                if (_modulecontroller.GetModuleState(ModuleType.ModuleVentValve))
                 {
-                    ModuleReadyToLoad.Invoke(0);
-                    ModuleEnums.IsVentValve = false;
+                    ModuleReadyToLoad.Invoke(ModuleType.ModuleVentValve);
+                    _modulecontroller.SetModuleState(ModuleType.ModuleVentValve, false);
                 }
             }
         }
         internal void OnDestroy()
         {
             _logger.LogDebug("OnDestroy triggered.");
-            Utility.MessageCenter.Unsubscribe<GameStateEnteredMessage>(conditionsmanager.GameStateEnteredHandler);
+            Utility.MessageCenter.Unsubscribe<GameStateEnteredMessage>(_conditionsmanager.GameStateEnteredHandler);
             ModuleReadyToLoad -= HandleModuleReadyToLoad;
         }
     }

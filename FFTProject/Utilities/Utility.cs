@@ -4,6 +4,11 @@
 //|by cvusmo===========================================|4|
 //|====================================================|1|
 
+//|=====================Summary========================|0|
+//|            helper methods & properties             |1|
+//|by cvusmo===========================================|4|
+//|====================================================|1|
+
 using BepInEx.Logging;
 using KSP.Game;
 using KSP.Messages;
@@ -22,6 +27,11 @@ namespace FFT.Utilities
         public static VesselSituations VesselSituations { get; private set; }
         public static MessageCenter MessageCenter { get; private set; }
         public static double UniversalTime => GameManager.Instance.Game.UniverseModel.UniversalTime;
+        public static void Initialize()
+        {
+            RefreshGameManager();
+            RefreshActiveVesselAndCurrentManeuver();
+        }
         public static void RefreshActiveVesselAndCurrentManeuver()
         {
             ActiveVessel = GameManager.Instance?.Game?.ViewController?.GetActiveVehicle(true)?.GetSimVessel(true);

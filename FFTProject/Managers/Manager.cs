@@ -1,4 +1,9 @@
-﻿using BepInEx.Logging;
+﻿//|=====================Summary========================|0|
+//|                   Switchboard                      |1|
+//|by cvusmo===========================================|4|
+//|====================================================|1|
+
+using BepInEx.Logging;
 using FFT.Controllers;
 using FFT.Modules;
 using FFT.Utilities;
@@ -11,61 +16,56 @@ namespace FFT.Managers
 {
     public class Manager
     {
-        internal List<LoadModule> Modules { get; private set; }
-        internal ManualLogSource Logger { get; private set; } = BepInEx.Logging.Logger.CreateLogSource("Manager: ");
+        internal List<LoadModule> Modules { get; private set; } = new List<LoadModule>();
+        internal ManualLogSource Logger { get; private set; }
         internal event Action<Module_VentValve> ModuleActivationRequested = delegate { };
-        internal StartModule startmodule => StartModule.Instance;
-        internal MessageManager MessageManager => MessageManager.Instance;
 
-        private static readonly Lazy<Manager> _lazyInstance = new Lazy<Manager>(() => new Manager());
-        public static Manager Instance => _lazyInstance.Value;
-        internal Manager()
+        private readonly StartModule _startmodule;
+        private readonly MessageManager _messageManager;
+        private readonly ModuleController _moduleController;
+        private readonly LoadModule _loadModule;
+        public Manager(
+            StartModule startmodule,
+            MessageManager messageManager,
+            ModuleController moduleController,
+            LoadModule loadModule)
         {
-            Modules = new List<LoadModule>();
-            MessageManager.ModuleReadyToLoad += HandleModuleReadyToLoad;
+            _startmodule = startmodule ?? throw new ArgumentNullException(nameof(startmodule));
+            _messageManager = messageManager ?? throw new ArgumentNullException(nameof(messageManager));
+            _moduleController = moduleController ?? throw new ArgumentNullException(nameof(moduleController));
+            _loadModule = loadModule ?? throw new ArgumentNullException(nameof(loadModule));
+
+            Logger = BepInEx.Logging.Logger.CreateLogSource("Manager: ");
+            _messageManager.ModuleReadyToLoad += HandleModuleReadyToLoad;
         }
         public void Update()
         {
             Utility.RefreshGameManager();
-            MessageManager.Update();
+            _messageManager.Update();
             Logger.LogDebug("MessageManager.Update called");
         }
         internal void LoadModuleForFlight()
         {
-            if (!Modules.Contains(LoadModule.Instance))
+            if (!Modules.Contains(_loadModule))
             {
-                Modules.Add(LoadModule.Instance);
+                Modules.Add(_loadModule);
             }
         }
         internal List<LoadModule> InitializeModules()
         {
-            List<LoadModule> localModules = new List<LoadModule>();
-            try
-            {
-                LoadModule loadModule = LoadModule.Instance;
-                localModules.Add(loadModule);
-
-                if (loadModule is ResetModule resetModule)
-                {
-                    resetModule.ModuleReset += OnModuleReset;
-                }
-                return localModules;
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError("Error creating a LoadModule. Full exception: " + ex);
-                return null;
-            }
+            List<LoadModule> localModules = new List<LoadModule> { _loadModule };
+            return localModules;
         }
         internal void OnModuleReset()
         {
+            _moduleController.ResetAllModuleStates();
             Logger.LogInfo("Module_VentValve Reset");
         }
-        public void HandleModuleReadyToLoad(ModuleEnums.ModuleType moduleType)
+        public void HandleModuleReadyToLoad(ModuleController.ModuleType moduleType)
         {
             if (StartingModule())
             {
-                startmodule.StartVentValve();
+                _startmodule.StartVentValve();
                 if (Utility.ActiveVessel == null)
                 {
                     return;

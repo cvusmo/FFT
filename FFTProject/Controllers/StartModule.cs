@@ -6,7 +6,7 @@
 using FFT.Modules;
 using FFT.Utilities;
 using Newtonsoft.Json;
-using KSP.Sim.impl;
+using FFT.Controllers.Interfaces;
 using BepInEx.Logging;
 
 namespace FFT.Controllers
@@ -14,34 +14,43 @@ namespace FFT.Controllers
     [JsonObject(MemberSerialization.OptIn)]
     public class StartModule
     {
-        internal static StartModule Instance { get; } = new StartModule();
-        internal Module_VentValve ModuleVentValve { get; set; }
-        private ManualLogSource _logger = BepInEx.Logging.Logger.CreateLogSource("StartModule: ");
-        internal StartModule() { }
+        private readonly ManualLogSource _logger;
+        private readonly ModuleController _moduleController;
+        public Module_VentValve ModuleVentValve { get; }
+
+        public StartModule(
+            ManualLogSource logger,
+            ModuleController moduleController,
+            Module_VentValve moduleVentValve)
+        {
+            _logger = logger ?? BepInEx.Logging.Logger.CreateLogSource("StartModule: ");
+            _moduleController = moduleController ?? throw new ArgumentNullException(nameof(moduleController));
+            ModuleVentValve = moduleVentValve ?? throw new ArgumentNullException(nameof(moduleVentValve));
+        }
         internal void StartVentValve()
         {
             Utility.RefreshActiveVesselAndCurrentManeuver();
 
-            if (ModuleEnums.IsVentValve)
+            if (_moduleController.GetModuleState(ModuleController.ModuleType.ModuleVentValve))
             {
-                ActivateModule(ModuleEnums.ModuleType.ModuleVentValve);
+                ActivateModule(ModuleController.ModuleType.ModuleVentValve);
                 _logger.LogInfo("StartVentValve called");
             }
 
             if (Utility.ActiveVessel == null)
                 return;
         }
-        internal void ActivateModule(ModuleEnums.ModuleType moduleType)
+        internal void ActivateModule(ModuleController.ModuleType moduleType)
         {
-            if (moduleType == ModuleEnums.ModuleType.ModuleVentValve && ModuleVentValve != null)
+            if (moduleType == ModuleController.ModuleType.ModuleVentValve && ModuleVentValve != null)
             {
                 ModuleVentValve.Activate();
                 _logger.LogInfo("ActivateModule called");
             }
         }
-        internal void DeactivateModule(ModuleEnums.ModuleType moduleType)
+        internal void DeactivateModule(ModuleController.ModuleType moduleType)
         {
-            if (moduleType == ModuleEnums.ModuleType.ModuleVentValve && ModuleVentValve != null)
+            if (moduleType == ModuleController.ModuleType.ModuleVentValve && ModuleVentValve != null)
             {
                 ModuleVentValve.Deactivate();
                 _logger.LogInfo("DeactivateModule called");

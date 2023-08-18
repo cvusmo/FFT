@@ -15,31 +15,45 @@ namespace FFT.Controllers
     {
         public event Action ModuleResetRequested = delegate { };
 
-        private static readonly Lazy<ResetModule> _lazyInstance = new Lazy<ResetModule>(() => new ResetModule());
-        public static ResetModule Instance => _lazyInstance.Value;
-        private ResetModule() { }
+        private readonly ConditionsManager _conditionsmanager;
+        private readonly Manager _manager;
+        private readonly ModuleController _modulecontroller;
+
+        public ResetModule(
+            ConditionsManager conditionsManager,
+            Manager manager,
+            ModuleController moduleController)
+        {
+            _conditionsmanager = conditionsManager ?? throw new ArgumentNullException(nameof(conditionsManager));
+            _manager = manager ?? throw new ArgumentNullException(nameof(manager));
+            _modulecontroller = moduleController ?? throw new ArgumentNullException(nameof(moduleController));
+        }
         public void Reset()
         {
-            ConditionsManager.Instance.ResetStates();
+            if (!_modulecontroller.ShouldResetModule) return;
 
-            if (ConditionsManager.Instance.inFlightViewState && ConditionsManager.Instance.inPreLaunchState)
+            _conditionsmanager.ResetStates();
+
+            if (_conditionsmanager.InFlightViewState && _conditionsmanager.InPreLaunchState)
             {
                 ModuleResetRequested.Invoke();
             }
+
+            _modulecontroller.ShouldResetModule = false;
+            _modulecontroller.IsModuleLoaded = false;
         }
         public void Unload()
         {
             if (!RefreshVesselData.IsFlightActive())
             {
-                Manager.Instance.Logger.LogInfo("Unloading Module");
+                _manager.Logger.LogInfo("Unloading Module");
 
-                if (ModuleEnums.IsVentValve)
+                if (_modulecontroller.GetModuleState(ModuleController.ModuleType.ModuleVentValve))
                 {
                     Reset();
-                    Manager.Instance.Logger.LogInfo("Reset Module_VentValve");
+                    _manager.Logger.LogInfo("Reset Module_VentValve");
                 }
             }
         }
     }
 }
-
