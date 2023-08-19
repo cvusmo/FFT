@@ -8,6 +8,7 @@ using BepInEx.Logging;
 using FFT.Controllers;
 using FFT.Controllers.Interfaces;
 using FFT.Managers;
+using FFT.Modules;
 using FFT.Utilities;
 using KSP.Messages;
 using SpaceWarp;

@@ -6,10 +6,8 @@
 using BepInEx.Logging;
 using FFT.Controllers.Interfaces;
 using FFT.Managers;
-using FFT.Modules;
 using FFT.Utilities;
 using Newtonsoft.Json;
-using System;
 
 namespace FFT.Controllers
 {
@@ -29,22 +27,16 @@ namespace FFT.Controllers
                 {
                     if (_instance == null)
                     {
-                        _instance = LoadModule.Instance;
+                        Initialize();
                     }
                     return _instance;
                 }
             }
         }
 
-        private readonly ManualLogSource _logger;
-        private Module_VentValve Module_VentValve { get; set; }
-        internal RefreshVesselData.RefreshActiveVessel RefreshActiveVessel => RefreshVesselData.Instance.RefreshActiveVesselInstance;  
-        private FuelTankDefinitions FuelTankDefinitions { get; set; }
-        private Data_FuelTanks DataFuelTanks { get; set; }
-        private VentValveDefinitions VentValveDefinitions { get; set; }
-        private Data_ValveParts DataValveParts { get; set; }
-        private Data_VentValve DataVentValve { get; set; }
-        private bool ModuleReadyToLoad { get; set; }
+        private readonly ManualLogSource _logger = BepInEx.Logging.Logger.CreateLogSource("LoadModule: ");
+
+        internal RefreshVesselData.RefreshActiveVessel RefreshActiveVessel => RefreshVesselData.Instance.RefreshActiveVesselInstance;
 
         private readonly Manager _manager;
         private readonly MessageManager _messageManager;
@@ -53,33 +45,44 @@ namespace FFT.Controllers
         private readonly StartModule _startModule;
         private readonly ResetModule _resetModule;
 
-        private event Action _moduleResetRequested;
-        public event Action ModuleResetRequested
+        public event Action ModuleResetRequested;
+
+        private LoadModule(
+            Manager manager,
+            MessageManager messageManager,
+            ConditionsManager conditionsManager,
+            ModuleController moduleController,
+            StartModule startModule,
+            ResetModule resetModule)
         {
-            add
+            _manager = manager;
+            _messageManager = messageManager;
+            _conditionsManager = conditionsManager;
+            _moduleController = moduleController;
+            _startModule = startModule;
+            _resetModule = resetModule;
+        }
+
+        public static void Initialize()
+        {
+            if (_instance == null)
             {
-                _moduleResetRequested += value;
-            }
-            remove
-            {
-                _moduleResetRequested -= value;
+                _instance = new LoadModule(
+                    Manager.Instance,
+                    MessageManager.Instance,
+                    ConditionsManager.Instance,
+                    ModuleController.Instance,
+                    StartModule.Instance,
+                    ResetModule.Instance);
             }
         }
-        private LoadModule(MessageManager _messageManager)
-        {
-            _logger = BepInEx.Logging.Logger.CreateLogSource("LoadModule: ");
-        }
+
         public void Boot()
         {
             Utility.RefreshGameManager();
             if (RefreshActiveVessel.IsFlightActive && EnableVFX)
             {
                 _logger.LogInfo("Booting Module_VentValve");
-                FuelTankDefinitions = new FuelTankDefinitions();
-                DataFuelTanks = new Data_FuelTanks();
-                VentValveDefinitions = new VentValveDefinitions();
-                DataValveParts = new Data_ValveParts();
-
                 _moduleController.SetModuleState(ModuleController.ModuleType.ModuleVentValve, true);
                 PreLoad();
             }
@@ -90,20 +93,18 @@ namespace FFT.Controllers
             if (_moduleController.GetModuleState(ModuleController.ModuleType.ModuleVentValve))
             {
                 _logger.LogInfo("Preloading Module_VentValve");
-                Module_VentValve.InitializeData();
-                Module_VentValve.InitializeVFX();
+                Module_VentValve.Instance.InitializeData();
+                Module_VentValve.Instance.InitializeVFX();
                 Load();
             }
-
         }
+
         public void Load()
         {
             Utility.RefreshGameManager();
             if (RefreshActiveVessel.IsFlightActive && _moduleController.GetModuleState(ModuleController.ModuleType.ModuleVentValve))
             {
                 _logger.LogInfo("Loading Module_VentValve");
-                ModuleReadyToLoad = true;
-
                 _messageManager.SubscribeToMessages();
                 _moduleController.IsModuleLoaded = true;
             }
