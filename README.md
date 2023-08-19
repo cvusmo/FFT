@@ -145,3 +145,14 @@ If you encounter any issues or have suggestions, please feel free to contribute 
 - **Responsibility**: Maintains vent valve-associated data.
 - **Actions**:
   - Houses settings, thresholds, and curves relevant to vent valve visual effects.
+
+### Sequence of Operations:
+
+ConditionsManager checks if conditions are met.
+If conditions are met, ConditionsManager tells Manager to load the appropriate module using LoadModule.
+Once loaded, Manager informs ConditionsManager: "I loaded this, now what?"
+ConditionsManager verifies if the correct module is loaded.
+If the correct module is loaded, ConditionsManager instructs Manager to start the module using StartModule.
+Manager responds: "Okay, I'm starting it".
+After the module starts, it informs ConditionsManager: "Hey, I started, reset my bool".
+ConditionsManager then tells Manager to reset the module's state.
