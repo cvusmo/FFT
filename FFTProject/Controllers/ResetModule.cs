@@ -40,7 +40,6 @@ namespace FFT.Controllers
                 }
             }
         }
-
         private ResetModule(
             ConditionsManager conditionsManager,
             Manager manager,
@@ -52,7 +51,6 @@ namespace FFT.Controllers
             _moduleController = moduleController ?? throw new ArgumentNullException(nameof(moduleController));
             _vesselData = vesselData ?? throw new ArgumentNullException(nameof(vesselData));
         }
-
         public void Reset()
         {
             if (!_moduleController.ShouldResetModule) return;

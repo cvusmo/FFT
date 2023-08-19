@@ -4,7 +4,6 @@ namespace FFT.Controllers.Interfaces
 {
     public interface IListener
     {
-
         public interface IGameStateListener
         {
             event Action<GameStateEnteredMessage> GameStateEntered;

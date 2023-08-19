@@ -17,6 +17,11 @@ namespace FFT.Managers
         internal static ConditionsManager _instance;
         internal static readonly object _lock = new object();
 
+        public delegate void ModuleConditionsMetDelegate();
+        public event ModuleConditionsMetDelegate ModuleConditionsMet;
+
+        public delegate void ModuleStartedDelegate();
+        public event ModuleStartedDelegate OnModuleStarted;
         public static ConditionsManager Instance
         {
             get
@@ -36,6 +41,36 @@ namespace FFT.Managers
             _messageManager.GameStateLeft += GameStateLeftHandler;
             _messageManager.VesselSituationChanged += HandleVesselSituationChanged;
         }
+        ~ConditionsManager()
+        {
+            _messageManager.GameStateEntered -= GameStateEnteredHandler;
+            _messageManager.GameStateLeft -= GameStateLeftHandler;
+            _messageManager.VesselSituationChanged -= HandleVesselSituationChanged;
+        }    
+        internal void CheckConditionsAndInformManager()
+        {
+            if (ConditionsReady())
+            {
+                ModuleConditionsMet?.Invoke();
+            }
+        }
+        public void VerifyAndStartModule()
+        {
+            _logger.LogDebug("Verifying loaded module...");
+            Manager.Instance.UpdateStartModule();
+        }
+        public void OnModuleLoaded()
+        {
+            VerifyAndStartModule();
+        }
+        public void HandleModuleLoaded()
+        {
+            ResetModuleState();
+        }
+        public void ResetModuleState()
+        {
+            Manager.Instance.OnModuleReset();
+        }       
         internal void GameStateEnteredHandler(MessageCenterMessage obj)
         {
             try
@@ -43,7 +78,7 @@ namespace FFT.Managers
                 if (obj is GameStateEnteredMessage gameStateMessage)
                 {
                     Utility.GameState = gameStateMessage.StateBeingEntered;
-                    LogDebug($"Entered New GameState: {Utility.GameStateToString(Utility.GameState)}.");
+                    _logger.LogDebug($"Entered New GameState: {Utility.GameStateToString(Utility.GameState)}.");
                 }
             }
             catch (Exception ex)
@@ -58,7 +93,7 @@ namespace FFT.Managers
                 if (obj is GameStateLeftMessage gameStateMessage)
                 {
                     Utility.GameState = gameStateMessage.StateBeingLeft;
-                    LogDebug($"Left Previous GameState: {Utility.GameStateToString(Utility.GameState)}.");
+                    _logger.LogDebug($"Left Previous GameState: {Utility.GameStateToString(Utility.GameState)}.");
                 }
             }
             catch (Exception ex)
@@ -70,7 +105,7 @@ namespace FFT.Managers
         {
             try
             {
-                LogDebug($"Vessel situation changed from {Utility.SituationToString(msg.OldSituation)} to {Utility.SituationToString(msg.NewSituation)}.");
+                _logger.LogDebug($"Vessel situation changed from {Utility.SituationToString(msg.OldSituation)} to {Utility.SituationToString(msg.NewSituation)}.");
             }
             catch (Exception ex)
             {
@@ -81,7 +116,7 @@ namespace FFT.Managers
         {
             try
             {
-                LogDebug("Checking conditions...");
+                _logger.LogDebug("Checking conditions...");
 
                 bool conditionsMet =
                     Utility.VesselSituations == KSP.Sim.impl.VesselSituations.PreLaunch ||
@@ -90,9 +125,14 @@ namespace FFT.Managers
                     Utility.GameState == GameState.FlightView ||
                     Utility.GameState == GameState.VehicleAssemblyBuilder;
 
-                LogDebug(conditionsMet
+                _logger.LogDebug(conditionsMet
                     ? $"Conditions Ready! Vessel Situation: {Utility.SituationToString(Utility.VesselSituations)}, Game State: {Utility.GameStateToString(Utility.GameState)}."
                     : $"Conditions not met: {Utility.SituationToString(Utility.VesselSituations)}, Game State: {Utility.GameStateToString(Utility.GameState)}.");
+
+                if (conditionsMet)
+                {
+                    ModuleConditionsMet.Invoke();
+                }
 
                 return conditionsMet;
             }
@@ -101,10 +141,6 @@ namespace FFT.Managers
                 _logger.LogError($"Error checking conditions: {ex}");
                 return false;
             }
-        }
-        private void LogDebug(string message)
-        {
-            _logger.LogDebug(message);
         }
     }
 }

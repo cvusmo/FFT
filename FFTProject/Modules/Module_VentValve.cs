@@ -1,5 +1,5 @@
 ﻿//|=====================Summary========================|0|
-//|               Fancy Fuel Tanks 0.1.4.1             |1|
+//|            Module for Cooling/Vent VFX             |1|
 //|by cvusmo===========================================|4|
 //|====================================================|1|
 
@@ -39,11 +39,6 @@ public class Module_VentValve : PartBehaviourModule
     private DynamicGravityForVFX DynamicGravityVent, DynamicGravityCooling;
 
     private readonly ManualLogSource _logger = MVV.CreateLogSource("FFT.Module_VentValve: ");
-    private ModuleController _moduleController;
-    private ConditionsManager _conditionsManager;
-
-    private delegate void ModuleActivationChangedHandler(bool isActive);
-    private event ModuleActivationChangedHandler OnModuleActivationChanged;
     private event System.Action VFXConditionsMet = delegate { };
 
     public FuelTankDefinitions FuelTankDefinitions { get; private set; }
@@ -54,18 +49,8 @@ public class Module_VentValve : PartBehaviourModule
     private float ASL, AGL, VV, HV, DP, SP, AT, ET, FL;
     private bool InAtmo = true;
     private bool ActivateModule;
-    private bool isVFXActive = false;
-    private bool wasActive = true;
     private float updateFrequency = 0.5f;
     private float timeSinceLastUpdate = 0.0f;
-    private Module_VentValve()
-    {
-        if (_instance != null && _instance != this)
-        {
-            throw new System.Exception("Multiple singletons of Module_VentValve detected.");
-        }
-        _instance = this;
-    }
     public override void OnInitialize()
     {
         base.OnInitialize();
@@ -101,15 +86,17 @@ public class Module_VentValve : PartBehaviourModule
     }
     public override void OnModuleFixedUpdate(float fixedDeltaTime)
     {
-        if (!ActivateModule) return;
-        base.OnModuleFixedUpdate(fixedDeltaTime);
-
-        timeSinceLastUpdate += fixedDeltaTime;
-
-        if (timeSinceLastUpdate >= updateFrequency)
+        if (ActivateModule)
         {
-            RefreshDataAndVFX();
-            timeSinceLastUpdate = 0.0f;
+            base.OnModuleFixedUpdate(fixedDeltaTime);
+
+            timeSinceLastUpdate += fixedDeltaTime;
+
+            if (timeSinceLastUpdate >= updateFrequency)
+            {
+                RefreshDataAndVFX();
+                timeSinceLastUpdate = 0.0f;
+            }
         }
     }
     private void RefreshDataAndVFX()
@@ -209,7 +196,6 @@ public class Module_VentValve : PartBehaviourModule
         ActivateModule = true;
         _logger.LogInfo("Module_VentValve activated.");
     }
-
     public void Deactivate()
     {
         ActivateModule = false;

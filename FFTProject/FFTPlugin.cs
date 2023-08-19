@@ -1,10 +1,15 @@
-﻿using BepInEx;
+﻿//|=====================Summary========================|0|
+//|                   Initializer                      |1|
+//|by cvusmo===========================================|4|
+//|====================================================|1|
+using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using FFT.Controllers;
 using FFT.Controllers.Interfaces;
 using FFT.Managers;
 using FFT.Utilities;
+using KSP.Messages;
 using SpaceWarp;
 using SpaceWarp.API.Mods;
 using System;
@@ -47,19 +52,6 @@ namespace FFT
         private ResetModule _resetModule;
         private ModuleController _moduleController;
         private Module_VentValve _moduleVentValve;
-        private FFTPlugin()
-        {
-            try
-            {
-                InitializeDependencies();
-                InitializeConfig();
-                Initialize();
-            }
-            catch (Exception ex)
-            {
-                HandleException(ex, "Initialization");
-            }
-        }
         public override void OnPreInitialized()
         {
             base.OnPreInitialized();
@@ -68,11 +60,25 @@ namespace FFT
         public override void OnInitialized()
         {
             base.OnInitialized();
-            _logger.LogInfo("Initializing FFTPlugin...");
+            _logger.LogDebug("Initializing FFTPlugin...");
 
-            _messageManager.SubscribeToMessages();
-            _manager.Update();
-            _logger.LogInfo("Subscribed to messages.");
+            Config.Bind(
+                "Fancy Fuel Tanks Settings",
+                "Enable VFX",
+                true,
+                "Fancy Fuel Tanks adds Dynamic Environmental Effects to fuel tanks"
+            );
+
+            try
+            {
+                InitializeDependencies();
+            }
+            catch (Exception ex)
+            {
+                HandleException(ex, "FFT Initialization");
+            }
+
+            _logger.LogDebug("Initialized FFTPlugin.");
         }
         public void SetLoadModule(ILoadModule loadModule)
         {
@@ -80,39 +86,72 @@ namespace FFT
         }
         private void InitializeDependencies()
         {
+            _logger.LogInfo("Subscribing to messages.... ");
             _messageManager = MessageManager.Instance;
-            _moduleController = ModuleController.Instance;
-            _conditionsManager = new ConditionsManager(_messageManager, _logger);
-            _loadModule = LoadModule.Instance;
-            _startModule = new StartModule(_messageManager, _logger);
-            _resetModule = ResetModule.Instance;
-            _manager = Manager.Instance;
-
-            _moduleVentValve = Module_VentValve.Instance;
-        }
-        private void InitializeConfig()
-        {
-            Config.Bind(
-                "Fancy Fuel Tanks Settings",
-                "Enable VFX",
-                true,
-                "Fancy Fuel Tanks adds Dynamic Environmental Effects to fuel tanks"
-            );
-        }
-        private void Initialize()
-        {
-            _logger.LogInfo("Initializing FFTPlugin...");
-            _messageManager.SubscribeToMessages();
-            _logger.LogInfo("Subscribed to messages.");
         }
         public override void OnPostInitialized()
         {
+            _logger.LogDebug("Calling OnPostInitialized...");
             base.OnPostInitialized();
-            _logger.LogInfo("FFTPlugin OnPostInitialized called.");
+
+            try
+            {
+                _logger.LogDebug("Attempting to initialize ConditionsManager...");
+                _conditionsManager = ConditionsManager.Instance;
+                _logger.LogDebug("ConditionsManager initialized successfully.");
+
+                _logger.LogDebug("Attempting to initialize ModuleController...");
+                _moduleController = ModuleController.Instance;
+                _logger.LogDebug("ModuleController initialized successfully.");
+
+                _logger.LogDebug("Attempting to initialize StartModule...");
+                _startModule = StartModule.Instance;
+                _logger.LogDebug("StartModule initialized successfully.");
+
+                _logger.LogDebug("Attempting to initialize ResetModule...");
+                _resetModule = ResetModule.Instance;
+                _logger.LogDebug("ResetModule initialized successfully.");
+
+                _logger.LogDebug("Attempting to initialize Manager...");
+                _manager = Manager.Instance;
+                _logger.LogDebug("Manager initialized successfully.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error during OnPostInitialized: {ex.Message}");
+            }
+        }
+        private void GameStateEnteredHandler(MessageCenterMessage obj)
+        {
+            TryInitializeModuleVentValve();
+        }
+        private void GameStateLeftHandler(MessageCenterMessage obj)
+        {
+            TryInitializeModuleVentValve();
+        }
+        private void VesselSituationChangedHandler(VesselSituationChangedMessage msg)
+        {
+            TryInitializeModuleVentValve();
+        }
+        private void TryInitializeModuleVentValve()
+        {
+            if (_conditionsManager.ConditionsReady() && _moduleVentValve == null)
+            {
+                _logger.LogDebug("Attempting to initialize ModuleVentValve...");
+                _moduleVentValve = Module_VentValve.Instance;
+                _logger.LogDebug("ModuleVentValve initialized successfully.");
+            }
         }
         private void HandleException(Exception ex, string context)
         {
             _logger.LogError($"Error in {context}: {ex}");
+        }
+
+        ~FFTPlugin()
+        {
+            _messageManager.GameStateEntered -= GameStateEnteredHandler;
+            _messageManager.GameStateLeft -= GameStateLeftHandler;
+            _messageManager.VesselSituationChanged -= VesselSituationChangedHandler;
         }
     }
 }
