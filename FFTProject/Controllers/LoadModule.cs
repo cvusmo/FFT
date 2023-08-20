@@ -8,6 +8,7 @@ using FFT.Controllers.Interfaces;
 using FFT.Managers;
 using FFT.Utilities;
 using Newtonsoft.Json;
+using System;
 
 namespace FFT.Controllers
 {
@@ -18,65 +19,43 @@ namespace FFT.Controllers
         public bool EnableVFX { get; private set; } = true;
 
         private static readonly object _lock = new object();
-        private static LoadModule _instance;
-        public static LoadModule Instance
-        {
-            get
-            {
-                lock (_lock)
-                {
-                    if (_instance == null)
-                    {
-                        Initialize();
-                    }
-                    return _instance;
-                }
-            }
-        }
-
         private readonly ManualLogSource _logger = BepInEx.Logging.Logger.CreateLogSource("LoadModule: ");
 
         internal RefreshVesselData.RefreshActiveVessel RefreshActiveVessel => RefreshVesselData.Instance.RefreshActiveVesselInstance;
 
-        private readonly Manager _manager;
-        private readonly MessageManager _messageManager;
-        private readonly ConditionsManager _conditionsManager;
-        private readonly ModuleController _moduleController;
-        private readonly StartModule _startModule;
-        private readonly ResetModule _resetModule;
+        private Manager _manager;
+        private MessageManager _messageManager;
+        private ConditionsManager _conditionsManager;
+        private ModuleController _moduleController;
+        private StartModule _startModule;
+        private ResetModule _resetModule;
 
         public event Action ModuleResetRequested;
 
-        private LoadModule(
-            Manager manager,
-            MessageManager messageManager,
-            ConditionsManager conditionsManager,
-            ModuleController moduleController,
-            StartModule startModule,
-            ResetModule resetModule)
+        private static LoadModule _instance;
+        private static readonly Lazy<LoadModule> _lazyInstance = new Lazy<LoadModule>(() => new LoadModule());
+        public static LoadModule Instance
         {
-            _manager = manager;
-            _messageManager = messageManager;
-            _conditionsManager = conditionsManager;
-            _moduleController = moduleController;
-            _startModule = startModule;
-            _resetModule = resetModule;
-        }
-
-        public static void Initialize()
-        {
-            if (_instance == null)
+            get
             {
-                _instance = new LoadModule(
-                    Manager.Instance,
-                    MessageManager.Instance,
-                    ConditionsManager.Instance,
-                    ModuleController.Instance,
-                    StartModule.Instance,
-                    ResetModule.Instance);
+                if (_instance == null)
+                {
+                    _instance = _lazyInstance.Value;
+                    _instance.InitializeDependencies();
+                }
+                return _instance;
             }
         }
-
+        private LoadModule() { }
+        public void InitializeDependencies()
+        {
+            _manager = Manager.Instance;
+            _messageManager = MessageManager.Instance;
+            _conditionsManager = ConditionsManager.Instance;
+            _moduleController = ModuleController.Instance;
+            _startModule = StartModule.Instance;
+            _resetModule = ResetModule.Instance;
+        }
         public void Boot()
         {
             Utility.RefreshGameManager();
@@ -98,7 +77,6 @@ namespace FFT.Controllers
                 Load();
             }
         }
-
         public void Load()
         {
             Utility.RefreshGameManager();

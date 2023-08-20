@@ -28,16 +28,8 @@ namespace FFT.Managers
         private readonly StartModule _startModule;
         private bool isModuleLoaded = false;
 
-        public static Manager Instance
-        {
-            get
-            {
-                lock (_lock)
-                {
-                    return _instance ??= new Manager();
-                }
-            }
-        }
+        private static readonly Lazy<Manager> _lazyInstance = new Lazy<Manager>(() => new Manager());
+        public static Manager Instance => _lazyInstance.Value;
         private Manager()
         {
             Logger = BepInEx.Logging.Logger.CreateLogSource("FFT.Manager: ");

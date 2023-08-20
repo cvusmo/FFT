@@ -23,8 +23,21 @@ namespace FFT
     {
         private static readonly object _lock = new object();
         private static FFTPlugin _instance;
+        private string _path;
         public ConfigEntry<bool> FFTConfig { get; private set; }
-        public string Path { get; private set; }
+        public string Path
+        {
+            get
+            {
+                _logger.LogDebug($"Accessed FFTPlugin.Path: {_path}");
+                return _path;
+            }
+            private set
+            {
+                _path = value;
+                _logger.LogDebug($"Set FFTPlugin.Path to: {_path}");
+            }
+        }
         public static FFTPlugin Instance
         {
             get
@@ -36,6 +49,7 @@ namespace FFT
                         if (_instance == null)
                         {
                             _instance = new FFTPlugin();
+                            _instance.Path = _instance.PluginFolderPath;
                         }
                     }
                 }
@@ -55,6 +69,8 @@ namespace FFT
         private Module_VentValve _moduleVentValve;
         public override void OnPreInitialized()
         {
+            Instance.Path = this.PluginFolderPath;
+            _logger.LogDebug($"PluginFolderPath: {this.PluginFolderPath}");
             base.OnPreInitialized();
             _logger.LogDebug("FFTPlugin OnPreInitialized called.");
         }
@@ -83,7 +99,7 @@ namespace FFT
         }
         public void SetLoadModule(ILoadModule loadModule)
         {
-            _loadModule = (LoadModule)loadModule;
+            _loadModule = LoadModule.Instance;
         }
         private void InitializeDependencies()
         {
@@ -147,7 +163,6 @@ namespace FFT
         {
             _logger.LogError($"Error in {context}: {ex}");
         }
-
         ~FFTPlugin()
         {
             _messageManager.GameStateEntered -= GameStateEnteredHandler;

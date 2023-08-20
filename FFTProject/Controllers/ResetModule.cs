@@ -22,24 +22,14 @@ namespace FFT.Controllers
         private static ResetModule _instance;
         private static readonly object _lock = new object();
         private bool? _isFlightActiveCache;
-        public static ResetModule Instance
-        {
-            get
-            {
-                lock (_lock)
-                {
-                    if (_instance == null)
-                    {
-                        _instance = new ResetModule(
-                            ConditionsManager.Instance,
-                            Manager.Instance,
-                            ModuleController.Instance,
-                            RefreshVesselData.Instance);
-                    }
-                    return _instance;
-                }
-            }
-        }
+        private static readonly Lazy<ResetModule> _lazyInstance = new Lazy<ResetModule>(() =>
+            new ResetModule(
+                ConditionsManager.Instance,
+                Manager.Instance,
+                ModuleController.Instance,
+                RefreshVesselData.Instance));
+        public static ResetModule Instance => _lazyInstance.Value;
+
         private ResetModule(
             ConditionsManager conditionsManager,
             Manager manager,
@@ -51,6 +41,7 @@ namespace FFT.Controllers
             _moduleController = moduleController ?? throw new ArgumentNullException(nameof(moduleController));
             _vesselData = vesselData ?? throw new ArgumentNullException(nameof(vesselData));
         }
+
         public void Reset()
         {
             if (!_moduleController.ShouldResetModule) return;
