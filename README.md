@@ -16,7 +16,7 @@
 - **Singleton Pattern**:
 
   - Replaced dependency injection in all classes with the Singleton pattern to manage instances. This change streamlines instance management, ensuring that only one instance of a class is instantiated and accessed globally.
-You can now copy and paste this markdown into GitHub.
+
 - **Event-Driven Logic**:
 
   - Refactored event handlers and delegates to establish an event-driven architecture, particularly for module activation and data refreshes.
