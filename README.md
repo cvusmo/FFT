@@ -1,29 +1,75 @@
-# Fancy Fancy Fuel Tanks v0.1.4.0 Patch Notes
+## Fancy Fuel Tanks v0.1.4.1 Patch Notes
 
-## Updates and Additions
-
-### New Features
-  - Introduced a linear relationship between fuel level and opacity, providing an intuitive and realistic visual representation.
-  - Implemented the `Module_VentValve`, controlling the venting process in the fuel system.
-  - Added the `RF2 Vent Valve`, a specialized component for venting operations.
-  - Remodeled all existing hydrogen tanks, enhancing visual quality and consistency.
-  - Added a new hydrogen tank, expanding the selection available to players.
-  - Implemented error logging for failure scenarios, aiding in future debugging.
+### Updates and Additions
 
 ### Enhancements and Optimizations
-  - **Fuel Level Calculation**: Refined the logic to calculate fuel levels accurately across different resources.
-  - **Opacity Calculation**: Modified the opacity calculation using an animation curve, creating a gradual decrease in opacity as fuel levels decrease from 1 to 0.8.
-  - **Modeling and Texturing**: Improved the aesthetic appeal and realism of the hydrogen tanks through careful remodeling and texturing.
-  -  Improved performance by only having necessary methods called during Updates/FixedUpdates
 
+**Opacity Calculation**:
+  - Adjusted the opacity calculation for the fuel tanks, ensuring a linear relationship between fuel level and opacity. The opacity now gradually decreases as the fuel level decreases from 1 to 0.95.
+
+**Fuel Percentage Conversion**:
+  - Modified the `fuelPercentage` value to be within the range of 0 to 1 by dividing by 100, aligning it with the expected input for the opacity calculation.
+
+**Module Consolidation**:
+  - Integrated `Module_TriggerVFX` into `Module_VentValve`, streamlining the control of visual effects and improving maintainability.
+
+**Singleton Pattern**:
+  - Replaced dependency injection in all classes with the Singleton pattern to manage instances. This change streamlines instance management, ensuring that only one instance of a class is instantiated and accessed globally.
+
+**Event-Driven Logic**:
+  - Refactored event handlers and delegates to establish an event-driven architecture, particularly for module activation and data refreshes.
+
+**Performance Improvement**:
+  - Expanded the `RefreshVesselData` method, reducing calculations and optimizing performance through more efficient update processes and conditional animations.
+
+**ASL and AGL Curve Update**:
+  - Updated the `VFXASLCurve` and `VFXAGLCurve` with new keyframes to reflect a linear relationship with the altitude values. Set the curves to match points (0, 0) and (1, 1), ensuring a direct and linear mapping between altitude and the visual effects. 
+  
+  **Added Additional Curves**:
+  - Vertical Velocity, Horizontal Velocity, Dynamic Pressure, Static Pressure, Atmospheric Temperature, External Temperature, and other environmental factors have been added to make the VFX react to the environment.
+ 
+**Cooling VFX Control**:
+  - Replaced multiple conditions for controlling Cooling VFX with a single Boolean parameter. This change simplifies the logic for turning the Cooling VFX on and off based on various factors like altitude and fuel level.
+  
+**Module Refactoring**:
+  - Extensively refactored every class to better align with modern software design principles and to simplify the codebase.
+  - Eliminated the use of `CurrentModule` in favor of a more dynamic and extensible approach.
+  
+ **Interface Introduction**:
+  - Introduced `ILoadModule` interface to standardize module loading operations, enhancing the maintainability and flexibility of the system.
+  
+**Dynamic Module Identification**:
+  - Overhauled `ModuleController` to provide more dynamic module identification. Instead of relying on static properties, it now employs methods that can adapt as the system grows and changes.
+  
+**Utility Class Initialization**:
+  - Ensured that the `Utility` class is properly initialized within the `FFTPlugin` to enable its functionality throughout the application.
+  
 ### Bug Fixes
-  - Fixed an issue causing the fuel level to count up instead of down.
-  - Corrected the curve setup, aligning it with the intended relationship between fuel level and opacity.
-  - Fixed an issue where SP-701 would angle when attached radially
+- Resolved an issue where the fuel calculation at launch incorrectly displayed 0 fuel when the fuel level was 100% full, ensuring accurate and intuitive representation of fuel status
+- Addressed redundancy issues in the Manager and ModuleController update methods to prevent unnecessary computations.
+- Resolved issue where VFX played in the OAB.
+- Disabled VFX while I rework it
 
 ## Next Steps
-- Continuously monitor and adjust the visual effects for further fine-tuning, ensuring that they stay aligned with fuel consumption in the vessel.
-- Focus on improving the performance and resource usage of the system.
-- Identify and resolve any new bugs or issues to enhance gameplay.
+- Develop a Fuel Tank Selector, providing a tailored and user-friendly selection experience.
+- Continue to refine performance and enhance the visual appearance of VFX, aiming for seamless integration and realistic effects.
 
-These changes mark a significant update to the fuel system's visual and functional aspects. The addition of new components and a more refined look for the hydrogen tanks provides players with a more immersive experience. If you encounter any issues or have suggestions, please feel free to contribute or open an issue on GitHub.
+If you encounter any issues or have suggestions, please feel free to contribute or open an issue on [GitHub](https://github.com/cvusmo/FFT).
+
+
+### Sequence of Operations:
+
+1. **Preliminary Condition Assessment**:
+    - The `ConditionsManager` meticulously evaluates the prevailing system conditions to determine the appropriate course of action.
+
+2. **Conditional Module Initialization**:
+    - Should the conditions be deemed optimal, the `ConditionsManager` seamlessly delegates the task to the `Manager`, instructing it to engage the requisite module via the `LoadModule` mechanism.
+
+3. **Integrity Verification**:
+    - Subsequent to a successful module load, the `Manager` seeks affirmation from the `ConditionsManager`, ensuring alignment of the initialized module with the anticipated operations. The `ConditionsManager`, in turn, ascertains the accuracy of the loaded module.
+
+4. **Module Operationalization**:
+    - With all verifications confirming congruence, the `ConditionsManager` authorizes the `Manager` to activate the selected module utilizing the `StartModule` protocol.
+
+5. **Operational Acknowledgment**:
+    - In acknowledgment of the commencement, the `Manager` conveys, "Initiating the specified module."
