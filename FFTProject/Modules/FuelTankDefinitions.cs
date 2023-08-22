@@ -7,13 +7,25 @@ namespace FFT.Modules
 {
     public class FuelTankDefinitions : MonoBehaviour
     {
-        [SerializeField]
-        public List<GameObject> fuelTankDefintions;
-        [SerializeField]
-        public Data_FuelTanks DataFuelTanks;
+        public static FuelTankDefinitions Instance { get; private set; }
+
+        [SerializeField] public List<GameObject> fuelTankDefintions;
+        [SerializeField] public Data_FuelTanks DataFuelTanks;
 
         public Dictionary<string, GameObject> fuelTanksDict = new Dictionary<string, GameObject>();
         public bool isInitialized = false;
+        private void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(this.gameObject);
+            }
+            else
+            {
+                Instance = this;
+                DontDestroyOnLoad(this.gameObject);
+            }
+        }
         public void PopulateFuelTanks(Data_FuelTanks data)
         {
             if (isInitialized) return;

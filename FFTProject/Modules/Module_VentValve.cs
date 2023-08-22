@@ -3,7 +3,6 @@
 //|by cvusmo===========================================|4|
 //|====================================================|1|
 using FFT.Utilities;
-using KSP.Animation;
 using KSP.Sim.Definitions;
 using UnityEngine;
 using VFX;
@@ -12,7 +11,6 @@ namespace FFT.Modules
 {
     public class Module_VentValve : PartBehaviourModule
     {
-        
         public override Type PartComponentModuleType => typeof(PartComponentModule_VentValve);
 
         [SerializeField] public GameObject VentValveVFX;
@@ -27,7 +25,7 @@ namespace FFT.Modules
         private FuelTankDefinitions _fuelTankDefinitions;
         private VentValveDefinitions _ventValveDefinitions;
 
-        private event System.Action VFXConditionsMet = delegate { };
+        private event Action VFXConditionsMet = delegate { };
 
         internal float dynamicPressure, atmosphericTemp, externalTemp, verticalSpeed, horizontalSpeed, altitudeSeaLevel, altitudeGroundLevel;
         internal bool activateModuleVentValve = false;
@@ -36,8 +34,6 @@ namespace FFT.Modules
         internal bool ActivateModule;
         internal float updateFrequency = 0.5f;
         internal float timeSinceLastUpdate = 0.0f;
-        internal VentValveDefinitions VentValveDefinitions { get; private set; }
-        internal FuelTankDefinitions FuelTankDefinitions { get; private set; }
         public RefreshVesselData RefreshVesselData { get; private set; }
         public override void OnInitialize()
         {
@@ -50,21 +46,25 @@ namespace FFT.Modules
         }
         internal void InitializeData()
         {
-            _dataFuelTanks = new Data_FuelTanks();
-            _dataValveParts = new Data_ValveParts();
-            _dataVentValve = new Data_VentValve();
-            _fuelTankDefinitions = new FuelTankDefinitions();
-            _ventValveDefinitions = new VentValveDefinitions();
-
-            if (_fuelTankDefinitions == null || _ventValveDefinitions == null)
+            if (_fuelTankDefinitions == null)
             {
-                throw new Exception("Definitions are not initialized.");
+                _fuelTankDefinitions = FindObjectOfType<FuelTankDefinitions>();
+            }
+            if (_ventValveDefinitions == null)
+            {
+                _ventValveDefinitions = FindObjectOfType<VentValveDefinitions>();
             }
 
-            FuelTankDefinitions.PopulateFuelTanks(_dataFuelTanks);
-            VentValveDefinitions.PopulateVentValve(_dataValveParts);
-        }
+            if (_fuelTankDefinitions != null && _dataFuelTanks != null)
+            {
+                _fuelTankDefinitions.PopulateFuelTanks(_dataFuelTanks);
+            }
 
+            if (_ventValveDefinitions != null && _dataValveParts != null)
+            {
+                _ventValveDefinitions.PopulateVentValve(_dataValveParts);
+            }
+        }
         internal void InitializeVFX()
         {
             FFTPlugin.Instance._logger.LogInfo("Module_VentValveVFX has started.");

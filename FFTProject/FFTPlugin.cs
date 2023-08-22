@@ -33,6 +33,10 @@ namespace FFT
         private RefreshVesselData _refreshVesselData;
         private ModuleController _moduleController;
         private Module_VentValve _moduleVentValve;
+        private FuelTankDefinitions _fuelTankDefinitions;
+        private VentValveDefinitions _ventValveDefinitions;
+        private Data_ValveParts _dataValveParts;
+        private Data_FuelTanks _dataFuelTanks;
         public static FFTPlugin Instance { get; private set; }
         public FFTPlugin()
         {
@@ -54,6 +58,13 @@ namespace FFT
         {
             base.OnInitialized();
             _logger.LogInfo("Initializing FFTPlugin...");
+
+            _fuelTankDefinitions = FuelTankDefinitions.Instance;
+            //_fuelTankDefinitions = new FuelTankDefinitions();
+            _dataFuelTanks = new Data_FuelTanks();
+            _ventValveDefinitions = VentValveDefinitions.Instance;
+            //_ventValveDefinitions = new VentValveDefinitions();
+            _dataValveParts = new Data_ValveParts();
 
             Config.Bind(
                 "Fancy Fuel Tanks Settings",
