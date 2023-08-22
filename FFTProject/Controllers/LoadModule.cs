@@ -30,7 +30,7 @@ namespace FFT.Controllers
         private ModuleController _moduleController;
         private StartModule _startModule;
         private ResetModule _resetModule;
-        private Module_VentValve _moduleVentValve;
+        private Module_VentValve _moduleVentValve;  
 
         public event Action ModuleResetRequested;
 

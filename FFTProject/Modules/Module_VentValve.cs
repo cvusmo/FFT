@@ -21,9 +21,11 @@ namespace FFT.Modules
         public DynamicGravityForVFX DynamicGravityVent, DynamicGravityCooling;
         public Animator Animator;
         public ParticleSystem PSVentValveVFX, PSCoolingVFX;
-        internal Data_VentValve DataVentValve;
-        internal Data_ValveParts DataValveParts;
-        internal Data_FuelTanks DataFuelTanks;  
+        private Data_FuelTanks _dataFuelTanks;
+        private Data_ValveParts _dataValveParts;
+        private Data_VentValve _dataVentValve;
+        private FuelTankDefinitions _fuelTankDefinitions;
+        private VentValveDefinitions _ventValveDefinitions;
 
         private event System.Action VFXConditionsMet = delegate { };
 
@@ -48,9 +50,21 @@ namespace FFT.Modules
         }
         internal void InitializeData()
         {
-            FuelTankDefinitions.PopulateFuelTanks(DataFuelTanks);
-            VentValveDefinitions.PopulateVentValve(DataValveParts);
+            _dataFuelTanks = new Data_FuelTanks();
+            _dataValveParts = new Data_ValveParts();
+            _dataVentValve = new Data_VentValve();
+            _fuelTankDefinitions = new FuelTankDefinitions();
+            _ventValveDefinitions = new VentValveDefinitions();
+
+            if (_fuelTankDefinitions == null || _ventValveDefinitions == null)
+            {
+                throw new Exception("Definitions are not initialized.");
+            }
+
+            FuelTankDefinitions.PopulateFuelTanks(_dataFuelTanks);
+            VentValveDefinitions.PopulateVentValve(_dataValveParts);
         }
+
         internal void InitializeVFX()
         {
             FFTPlugin.Instance._logger.LogInfo("Module_VentValveVFX has started.");
@@ -112,35 +126,35 @@ namespace FFT.Modules
         {
             var vesselData = RefreshVesselData.Instance;
 
-            ASL = GetCurveValue(DataVentValve.VFXASLCurve, (float)vesselData.AltitudeAsl);
+            ASL = GetCurveValue(_dataVentValve.VFXASLCurve, (float)vesselData.AltitudeAsl);
             Animator.SetFloat("ASL", ASL);
 
-            AGL = GetCurveValue(DataVentValve.VFXAGLCurve, (float)vesselData.AltitudeAgl);
+            AGL = GetCurveValue(_dataVentValve.VFXAGLCurve, (float)vesselData.AltitudeAgl);
             Animator.SetFloat("AGL", AGL);
 
-            VV = GetCurveValue(DataVentValve.VFXVerticalVelocity, (float)vesselData.VerticalVelocity);
+            VV = GetCurveValue(_dataVentValve.VFXVerticalVelocity, (float)vesselData.VerticalVelocity);
             Animator.SetFloat("VV", VV);
 
-            HV = GetCurveValue(DataVentValve.VFXHorizontalVelocity, (float)vesselData.HorizontalVelocity);
+            HV = GetCurveValue(_dataVentValve.VFXHorizontalVelocity, (float)vesselData.HorizontalVelocity);
             Animator.SetFloat("HV", HV);
 
-            DP = GetCurveValue(DataVentValve.VFXDynamicPressure, (float)vesselData.DynamicPressure_kPa);
+            DP = GetCurveValue(_dataVentValve.VFXDynamicPressure, (float)vesselData.DynamicPressure_kPa);
             Animator.SetFloat("DP", DP);
 
-            SP = GetCurveValue(DataVentValve.VFXStaticPressure, (float)vesselData.StaticPressure_kPa);
+            SP = GetCurveValue(_dataVentValve.VFXStaticPressure, (float)vesselData.StaticPressure_kPa);
             Animator.SetFloat("SP", SP);
 
-            AT = GetCurveValue(DataVentValve.VFXAtmosphericTemperature, (float)vesselData.AtmosphericTemperature);
+            AT = GetCurveValue(_dataVentValve.VFXAtmosphericTemperature, (float)vesselData.AtmosphericTemperature);
             Animator.SetFloat("AT", AT);
 
-            ET = GetCurveValue(DataVentValve.VFXExternalTemperature, (float)vesselData.ExternalTemperature);
+            ET = GetCurveValue(_dataVentValve.VFXExternalTemperature, (float)vesselData.ExternalTemperature);
             Animator.SetFloat("ET", ET);
 
             InAtmo = vesselData.IsInAtmosphere;
 
             var fuelPercentage = vesselData.FuelPercentage;
             double scaledFuelPercentage = vesselData.FuelPercentage / 100.0;
-            FL = DataVentValve.VFXOpacityCurve.Evaluate((float)scaledFuelPercentage);
+            FL = _dataVentValve.VFXOpacityCurve.Evaluate((float)scaledFuelPercentage);
             Animator.SetFloat("FL", FL);
 
             if (InAtmo)
