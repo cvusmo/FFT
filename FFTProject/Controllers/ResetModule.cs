@@ -18,30 +18,38 @@ namespace FFT.Controllers
         private readonly Manager _manager;
         private readonly ModuleController _moduleController;
         private readonly RefreshVesselData _vesselData;
-
-        private static ResetModule _instance;
-        private static readonly object _lock = new object();
         private bool? _isFlightActiveCache;
-        private static readonly Lazy<ResetModule> _lazyInstance = new Lazy<ResetModule>(() =>
-            new ResetModule(
-                ConditionsManager.Instance,
-                Manager.Instance,
-                ModuleController.Instance,
-                RefreshVesselData.Instance));
-        public static ResetModule Instance => _lazyInstance.Value;
 
-        private ResetModule(
+        private static readonly object _lock = new object();
+        private static ResetModule _instance;
+        public ResetModule(
             ConditionsManager conditionsManager,
             Manager manager,
             ModuleController moduleController,
             RefreshVesselData vesselData)
         {
-            _conditionsManager = conditionsManager ?? throw new ArgumentNullException(nameof(conditionsManager));
-            _manager = manager ?? throw new ArgumentNullException(nameof(manager));
-            _moduleController = moduleController ?? throw new ArgumentNullException(nameof(moduleController));
-            _vesselData = vesselData ?? throw new ArgumentNullException(nameof(vesselData));
+            _conditionsManager = conditionsManager;
+            _manager = manager;
+            _moduleController = moduleController;
+            _vesselData = vesselData;
         }
-
+        public static ResetModule Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    lock (_lock)
+                    {
+                        if (_instance == null)
+                        {
+                            _instance = new ResetModule(ConditionsManager.Instance, Manager.Instance, ModuleController.Instance, new RefreshVesselData());
+                        }
+                    }
+                }
+                return _instance;
+            }
+        }
         public void Reset()
         {
             if (!_moduleController.ShouldResetModule) return;

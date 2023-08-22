@@ -6,9 +6,6 @@ using BepInEx.Logging;
 using FFT.Controllers;
 using FFT.Utilities;
 using KSP.Game;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace FFT.Managers
 {
@@ -17,19 +14,14 @@ namespace FFT.Managers
         private readonly List<LoadModule> Modules = new List<LoadModule>();
         internal ManualLogSource Logger { get; }
 
-        private static Manager _instance;
-        private static readonly object _lock = new object();
-        private readonly ConditionsManager _conditionsManager;
 
-        private readonly StartModule _startmodule;
+        private readonly ConditionsManager _conditionsManager;
         private readonly MessageManager _messageManager;
         private readonly ModuleController _moduleController;
         private readonly LoadModule _loadModule;
         private readonly StartModule _startModule;
         private bool isModuleLoaded = false;
-
-        private static readonly Lazy<Manager> _lazyInstance = new Lazy<Manager>(() => new Manager());
-        public static Manager Instance => _lazyInstance.Value;
+        public static Manager Instance { get; private set; }
         private Manager()
         {
             Logger = BepInEx.Logging.Logger.CreateLogSource("FFT.Manager: ");
@@ -37,11 +29,24 @@ namespace FFT.Managers
             _startModule = StartModule.Instance ?? throw new InvalidOperationException("StartModule is not initialized.");
             _messageManager = MessageManager.Instance ?? throw new InvalidOperationException("MessageManager is not initialized.");
             _moduleController = ModuleController.Instance ?? throw new InvalidOperationException("ModuleController is not initialized.");
-            _loadModule = LoadModule.Instance ?? throw new InvalidOperationException("LoadModule is not initialized.");
+            _loadModule = LoadModule.Instance;
+            if (_loadModule == null)
+            {
+                throw new InvalidOperationException("LoadModule is not initialized.");
+            }
+            _loadModule.InitializeDependencies();
+
             _messageManager.ModuleReadyToLoad += HandleModuleReadyToLoad;
             ConditionsManager.Instance.ModuleConditionsMet += HandleModuleConditionsMet;
 
             InitializeManager();
+        }
+        public static void InitializeInstance()
+        {
+            if (Instance != null)
+                throw new InvalidOperationException("Manager is already initialized.");
+
+            Instance = new Manager();
         }
         private void InitializeManager()
         {
@@ -88,7 +93,7 @@ namespace FFT.Managers
             {
                 LoadModuleForFlight();
                 //ModuleLoaded.Invoke(moduleType);
-                _startmodule?.StartVentValve();
+                _startModule?.StartVentValve();
                 if (Utility.ActiveVessel == null)
                 {
                     Logger.LogWarning("ActiveVessel is null. HandleModuleReadyToLoad may not function as expected.");
@@ -104,7 +109,7 @@ namespace FFT.Managers
                 return;
             }
 
-            _startmodule?.StartVentValve();
+            _startModule?.StartVentValve();
             Logger.LogDebug("Module started");
 
             ConditionsManager.Instance.HandleModuleLoaded();
@@ -118,6 +123,6 @@ namespace FFT.Managers
         {
             _moduleController?.ResetAllModuleStates();
             Logger.LogInfo("All Modules have been Reset");
-        }    
+        }
     }
 }

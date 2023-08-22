@@ -6,6 +6,7 @@
 using BepInEx.Logging;
 using FFT.Controllers.Interfaces;
 using FFT.Managers;
+using FFT.Modules;
 using FFT.Utilities;
 using Newtonsoft.Json;
 using System;

@@ -8,12 +8,11 @@ using BepInEx.Logging;
 using FFT.Controllers;
 using FFT.Controllers.Interfaces;
 using FFT.Managers;
-using FFT.Modules;
 using FFT.Utilities;
 using KSP.Messages;
 using SpaceWarp;
 using SpaceWarp.API.Mods;
-using System;
+using FFT.Modules;
 
 namespace FFT
 {
@@ -21,43 +20,10 @@ namespace FFT
     [BepInDependency(SpaceWarpPlugin.ModGuid, SpaceWarpPlugin.ModVer)]
     internal class FFTPlugin : BaseSpaceWarpPlugin, IModuleController
     {
-        private static readonly object _lock = new object();
-        private static FFTPlugin _instance;
-        private string _path;
         public ConfigEntry<bool> FFTConfig { get; private set; }
-        public string Path
-        {
-            get
-            {
-                _logger.LogDebug($"Accessed FFTPlugin.Path: {_path}");
-                return _path;
-            }
-            private set
-            {
-                _path = value;
-                _logger.LogDebug($"Set FFTPlugin.Path to: {_path}");
-            }
-        }
-        public static FFTPlugin Instance
-        {
-            get
-            {
-                if (_instance == null)
-                {
-                    lock (_lock)
-                    {
-                        if (_instance == null)
-                        {
-                            _instance = new FFTPlugin();
-                            _instance.Path = _instance.PluginFolderPath;
-                        }
-                    }
-                }
-                return _instance;
-            }
-        }
+        public static FFTPlugin Instance { get; private set; }
 
-        private readonly ManualLogSource _logger = BepInEx.Logging.Logger.CreateLogSource("FFTPlugin");
+        internal readonly ManualLogSource _logger = BepInEx.Logging.Logger.CreateLogSource("FFTPlugin");
 
         private Manager _manager;
         private ConditionsManager _conditionsManager;
@@ -65,19 +31,23 @@ namespace FFT
         private LoadModule _loadModule;
         private StartModule _startModule;
         private ResetModule _resetModule;
+        private RefreshVesselData _refreshVesselData;
         private ModuleController _moduleController;
         private Module_VentValve _moduleVentValve;
+
+        public static string Path { get; private set; }
+
         public override void OnPreInitialized()
         {
-            Instance.Path = this.PluginFolderPath;
-            _logger.LogDebug($"PluginFolderPath: {this.PluginFolderPath}");
+            FFTPlugin.Path = this.PluginFolderPath;
             base.OnPreInitialized();
-            _logger.LogDebug("FFTPlugin OnPreInitialized called.");
+            _logger.LogInfo("OnPreInitialized FFTPlugin.");
         }
+
         public override void OnInitialized()
         {
             base.OnInitialized();
-            _logger.LogDebug("Initializing FFTPlugin...");
+            _logger.LogInfo("Initializing FFTPlugin...");
 
             Config.Bind(
                 "Fancy Fuel Tanks Settings",
@@ -95,7 +65,7 @@ namespace FFT
                 HandleException(ex, "FFT Initialization");
             }
 
-            _logger.LogDebug("Initialized FFTPlugin.");
+            _logger.LogInfo("Initialized FFTPlugin.");
         }
         public void SetLoadModule(ILoadModule loadModule)
         {
@@ -108,66 +78,42 @@ namespace FFT
         }
         public override void OnPostInitialized()
         {
-            _logger.LogDebug("Calling OnPostInitialized...");
+            _logger.LogInfo("Calling OnPostInitialized...");
             base.OnPostInitialized();
 
             try
             {
-                _logger.LogDebug("Attempting to initialize ConditionsManager...");
                 _conditionsManager = ConditionsManager.Instance;
-                _logger.LogDebug("ConditionsManager initialized successfully.");
+                _logger.LogInfo("ConditionsManager initialized successfully.");
 
-                _logger.LogDebug("Attempting to initialize ModuleController...");
                 _moduleController = ModuleController.Instance;
-                _logger.LogDebug("ModuleController initialized successfully.");
+                _logger.LogInfo("ModuleController initialized successfully.");
 
-                _logger.LogDebug("Attempting to initialize StartModule...");
                 _startModule = StartModule.Instance;
-                _logger.LogDebug("StartModule initialized successfully.");
+                _logger.LogInfo("StartModule initialized successfully.");
 
-                _logger.LogDebug("Attempting to initialize ResetModule...");
-                _resetModule = ResetModule.Instance;
-                _logger.LogDebug("ResetModule initialized successfully.");
-
-                _logger.LogDebug("Attempting to initialize Manager...");
+                Manager.InitializeInstance();
                 _manager = Manager.Instance;
-                _logger.LogDebug("Manager initialized successfully.");
+                _logger.LogInfo("Manager initialized successfully.");
+
+                _refreshVesselData = RefreshVesselData.Instance;
+                _logger.LogInfo("RefreshVesselData initialized successfully.");
+
+                _resetModule = new ResetModule(_conditionsManager, _manager, _moduleController, _refreshVesselData);
+                _logger.LogInfo("ResetModule initialized successfully.");
+
+                _moduleVentValve = Module_VentValve.Instance;
+                _logger.LogDebug("ModuleVentValve initialized successfully.");
+
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Error during OnPostInitialized: {ex.Message}");
             }
         }
-        private void GameStateEnteredHandler(MessageCenterMessage obj)
-        {
-            TryInitializeModuleVentValve();
-        }
-        private void GameStateLeftHandler(MessageCenterMessage obj)
-        {
-            TryInitializeModuleVentValve();
-        }
-        private void VesselSituationChangedHandler(VesselSituationChangedMessage msg)
-        {
-            TryInitializeModuleVentValve();
-        }
-        private void TryInitializeModuleVentValve()
-        {
-            if (_conditionsManager.ConditionsReady() && _moduleVentValve == null)
-            {
-                _logger.LogDebug("Attempting to initialize ModuleVentValve...");
-                _moduleVentValve = Module_VentValve.Instance;
-                _logger.LogDebug("ModuleVentValve initialized successfully.");
-            }
-        }
         private void HandleException(Exception ex, string context)
         {
             _logger.LogError($"Error in {context}: {ex}");
-        }
-        ~FFTPlugin()
-        {
-            _messageManager.GameStateEntered -= GameStateEnteredHandler;
-            _messageManager.GameStateLeft -= GameStateLeftHandler;
-            _messageManager.VesselSituationChanged -= VesselSituationChangedHandler;
         }
     }
 }
