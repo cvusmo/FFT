@@ -21,7 +21,6 @@ namespace FFT
     internal class FFTPlugin : BaseSpaceWarpPlugin, IModuleController
     {
         public ConfigEntry<bool> FFTConfig { get; private set; }
-        public static FFTPlugin Instance { get; private set; }
 
         internal readonly ManualLogSource _logger = BepInEx.Logging.Logger.CreateLogSource("FFTPlugin");
 
@@ -34,9 +33,16 @@ namespace FFT
         private RefreshVesselData _refreshVesselData;
         private ModuleController _moduleController;
         private Module_VentValve _moduleVentValve;
-
+        public static FFTPlugin Instance { get; private set; }
+        public FFTPlugin()
+        {
+            if (Instance != null)
+            {
+                throw new Exception("FFTPlugin is a singleton and cannot have multiple instances!");
+            }
+            Instance = this;
+        }
         public static string Path { get; private set; }
-
         public override void OnPreInitialized()
         {
             FFTPlugin.Path = this.PluginFolderPath;
@@ -102,7 +108,7 @@ namespace FFT
                 _resetModule = new ResetModule(_conditionsManager, _manager, _moduleController, _refreshVesselData);
                 _logger.LogInfo("ResetModule initialized successfully.");
 
-                _moduleVentValve = Module_VentValve.Instance;
+                _moduleVentValve = new Module_VentValve();
                 _logger.LogDebug("ModuleVentValve initialized successfully.");
 
             }

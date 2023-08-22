@@ -19,7 +19,8 @@ namespace FFT.Controllers
         private readonly ManualLogSource _logger;
         private readonly ModuleController _moduleController;
         private readonly MessageManager _messageManager;
-        public Module_VentValve ModuleVentValve { get; }
+        private static Module_VentValve _moduleVentValve;
+        public Module_VentValve ModuleVentValve { get; private set; }
 
         private static StartModule _instance;
         private static readonly object _lock = new object();
@@ -37,7 +38,7 @@ namespace FFT.Controllers
                         _instance = new StartModule(
                             BepInEx.Logging.Logger.CreateLogSource("StartModule: "),
                             ModuleController.Instance,
-                            Module_VentValve.Instance);
+                            _moduleVentValve = new Module_VentValve());
                     }
                     return _instance;
                 }

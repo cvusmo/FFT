@@ -12,40 +12,28 @@ namespace FFT.Modules
 {
     public class Module_VentValve : PartBehaviourModule
     {
-        private static Module_VentValve _instance;
-        public static Module_VentValve Instance
-        {
-            get
-            {
-                if (_instance == null)
-                {
-                    _instance = new Module_VentValve();
-                }
-                return _instance;
-            }
-        }
+        
         public override Type PartComponentModuleType => typeof(PartComponentModule_VentValve);
 
-        [SerializeField] public Data_VentValve DataVentValve;
-        [SerializeField] public Data_ValveParts DataValveParts;
         [SerializeField] public GameObject VentValveVFX;
         [SerializeField] public GameObject CoolingVFX;
 
-        public TriggerVFXFromAnimation TriggerVFX;
         public DynamicGravityForVFX DynamicGravityVent, DynamicGravityCooling;
         public Animator Animator;
-        internal ParticleSystem PSVentValveVFX, PSCoolingVFX;
-        internal Data_FuelTanks DataFuelTanks;
+        public ParticleSystem PSVentValveVFX, PSCoolingVFX;
+        internal Data_VentValve DataVentValve;
+        internal Data_ValveParts DataValveParts;
+        internal Data_FuelTanks DataFuelTanks;  
 
         private event System.Action VFXConditionsMet = delegate { };
 
         internal float dynamicPressure, atmosphericTemp, externalTemp, verticalSpeed, horizontalSpeed, altitudeSeaLevel, altitudeGroundLevel;
         internal bool activateModuleVentValve = false;
-        private float ASL, AGL, VV, HV, DP, SP, AT, ET, FL;
-        private bool InAtmo = true;
-        private bool ActivateModule;
-        private float updateFrequency = 0.5f;
-        private float timeSinceLastUpdate = 0.0f;
+        internal float ASL, AGL, VV, HV, DP, SP, AT, ET, FL;
+        internal bool InAtmo = true;
+        internal bool ActivateModule;
+        internal float updateFrequency = 0.5f;
+        internal float timeSinceLastUpdate = 0.0f;
         internal VentValveDefinitions VentValveDefinitions { get; private set; }
         internal FuelTankDefinitions FuelTankDefinitions { get; private set; }
         public RefreshVesselData RefreshVesselData { get; private set; }
@@ -62,7 +50,6 @@ namespace FFT.Modules
         {
             FuelTankDefinitions.PopulateFuelTanks(DataFuelTanks);
             VentValveDefinitions.PopulateVentValve(DataValveParts);
-            InitializeVFX();
         }
         internal void InitializeVFX()
         {

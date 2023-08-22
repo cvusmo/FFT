@@ -30,6 +30,7 @@ namespace FFT.Controllers
         private ModuleController _moduleController;
         private StartModule _startModule;
         private ResetModule _resetModule;
+        private Module_VentValve _moduleVentValve;
 
         public event Action ModuleResetRequested;
 
@@ -56,6 +57,7 @@ namespace FFT.Controllers
             _moduleController = ModuleController.Instance;
             _startModule = StartModule.Instance;
             _resetModule = ResetModule.Instance;
+            _moduleVentValve = new Module_VentValve();
         }
         public void Boot()
         {
@@ -73,8 +75,7 @@ namespace FFT.Controllers
             if (_moduleController.GetModuleState(ModuleController.ModuleType.ModuleVentValve))
             {
                 _logger.LogInfo("Preloading Module_VentValve");
-                Module_VentValve.Instance.InitializeData();
-                Module_VentValve.Instance.InitializeVFX();
+                _moduleVentValve = new Module_VentValve();
                 Load();
             }
         }
