@@ -9,4 +9,3 @@ namespace FFT.Modules
         public override Type PartBehaviourModuleType => typeof(Module_VentValve);
     }
 }
-

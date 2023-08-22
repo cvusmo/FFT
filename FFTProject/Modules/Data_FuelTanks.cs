@@ -1,11 +1,14 @@
-﻿using UnityEngine;
+﻿using KSP.Sim.Definitions;
+using UnityEngine;
 
 namespace FFT.Modules
 {
-    public class Data_FuelTanks : MonoBehaviour
+    [Serializable]
+    public class Data_FuelTanks : ModuleData
     {
+        public override Type ModuleType => typeof(Module_VentValve);
         public Dictionary<string, GameObject> fuelTankDict;
-        
+
         public void Awake()
         {
             fuelTankDict = new Dictionary<string, GameObject>();
@@ -33,6 +36,6 @@ namespace FFT.Modules
         public GameObject SR812A;
         [SerializeField]
         public GameObject SR813;
-        
+
     }
 }

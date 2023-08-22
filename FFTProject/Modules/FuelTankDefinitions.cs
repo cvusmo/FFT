@@ -1,20 +1,31 @@
 ﻿using KSP.Animation;
 using UnityEngine;
+using System.Collections.Generic;
 using VFX;
 
 namespace FFT.Modules
 {
     public class FuelTankDefinitions : MonoBehaviour
     {
-        [SerializeField]
-        public List<GameObject> fuelTankDefintions;
-        [SerializeField]
-        public Data_TriggerVFX _dataTriggerVFX;
-        [SerializeField]
-        public Data_FuelTanks _dataFuelTanks;
+        public static FuelTankDefinitions Instance { get; private set; }
+
+        [SerializeField] public List<GameObject> fuelTankDefintions;
+        [SerializeField] public Data_FuelTanks DataFuelTanks;
 
         public Dictionary<string, GameObject> fuelTanksDict = new Dictionary<string, GameObject>();
         public bool isInitialized = false;
+        private void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(this.gameObject);
+            }
+            else
+            {
+                Instance = this;
+                DontDestroyOnLoad(this.gameObject);
+            }
+        }
         public void PopulateFuelTanks(Data_FuelTanks data)
         {
             if (isInitialized) return;
@@ -38,11 +49,11 @@ namespace FFT.Modules
 
             return null;
         }
-        public Module_TriggerVFX GetTriggerVFXModule(string tankName)
+        public Module_VentValve GetCoolingVFX(string tankName)
         {
             if (fuelTanksDict.TryGetValue(tankName, out var tank))
             {
-                return tank.GetComponent<Module_TriggerVFX>();
+                return tank.GetComponent<Module_VentValve>();
             }
 
             return null;

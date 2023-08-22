@@ -1,89 +1,136 @@
-﻿using BepInEx;
+﻿//|=====================Summary========================|0|
+//|                   Initializer                      |1|
+//|by cvusmo===========================================|4|
+//|====================================================|1|
+using BepInEx;
+using BepInEx.Configuration;
 using BepInEx.Logging;
-using FFT.Modules;
-using KSP.Game;
+using FFT.Controllers;
+using FFT.Controllers.Interfaces;
+using FFT.Managers;
+using FFT.Utilities;
+using KSP.Messages;
 using SpaceWarp;
 using SpaceWarp.API.Mods;
+using FFT.Modules;
 
 namespace FFT
 {
     [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
     [BepInDependency(SpaceWarpPlugin.ModGuid, SpaceWarpPlugin.ModVer)]
-    public class FFTPlugin : BaseSpaceWarpPlugin
+    internal class FFTPlugin : BaseSpaceWarpPlugin, IModuleController
     {
-        public const string ModGuid = MyPluginInfo.PLUGIN_GUID;
-        public const string ModName = MyPluginInfo.PLUGIN_NAME;
-        public const string ModVer = MyPluginInfo.PLUGIN_VERSION;
+        public ConfigEntry<bool> FFTConfig { get; private set; }
 
-        public GameInstance gameInstance;
-        public GameState? _state;
-        public FuelTankDefinitions fuelTankDefinitions;
-        public Data_FuelTanks dataFuelTanks;
-        public VentValveDefinitions ventValveDefinitions;
-        public Data_ValveParts dataValveParts;
-        public Module_TriggerVFX Module_TriggerVFX { get; private set; }
-        public Module_VentValve Module_VentValve { get; private set; }
-        public static FFTPlugin Instance { get; set; }
-        public new static ManualLogSource Logger { get; set; }
+        internal readonly ManualLogSource _logger = BepInEx.Logging.Logger.CreateLogSource("FFTPlugin");
+
+        private Manager _manager;
+        private ConditionsManager _conditionsManager;
+        private MessageManager _messageManager;
+        private LoadModule _loadModule;
+        private StartModule _startModule;
+        private ResetModule _resetModule;
+        private RefreshVesselData _refreshVesselData;
+        private ModuleController _moduleController;
+        private Module_VentValve _moduleVentValve;
+        private FuelTankDefinitions _fuelTankDefinitions;
+        private VentValveDefinitions _ventValveDefinitions;
+        private Data_ValveParts _dataValveParts;
+        private Data_FuelTanks _dataFuelTanks;
+        public static FFTPlugin Instance { get; private set; }
+        public FFTPlugin()
+        {
+            if (Instance != null)
+            {
+                throw new Exception("FFTPlugin is a singleton and cannot have multiple instances!");
+            }
+            Instance = this;
+        }
         public static string Path { get; private set; }
         public override void OnPreInitialized()
         {
             FFTPlugin.Path = this.PluginFolderPath;
+            base.OnPreInitialized();
+            _logger.LogInfo("OnPreInitialized FFTPlugin.");
         }
+
         public override void OnInitialized()
         {
             base.OnInitialized();
+            _logger.LogInfo("Initializing FFTPlugin...");
 
-            Instance = this;
-            Logger = base.Logger;
-            Logger.LogInfo("Loaded");
+            _fuelTankDefinitions = FuelTankDefinitions.Instance;
+            //_fuelTankDefinitions = new FuelTankDefinitions();
+            _dataFuelTanks = new Data_FuelTanks();
+            _ventValveDefinitions = VentValveDefinitions.Instance;
+            //_ventValveDefinitions = new VentValveDefinitions();
+            _dataValveParts = new Data_ValveParts();
 
-            gameInstance = GameManager.Instance.Game;
-            fuelTankDefinitions = new FuelTankDefinitions();
-            dataFuelTanks = new Data_FuelTanks();
-            ventValveDefinitions = new VentValveDefinitions();
-            dataValveParts = new Data_ValveParts();
-        }
-        public void Update()
-        {
-            _state = BaseSpaceWarpPlugin.Game?.GlobalGameState?.GetState();
+            Config.Bind(
+                "Fancy Fuel Tanks Settings",
+                "Enable VFX",
+                true,
+                "Fancy Fuel Tanks adds Dynamic Environmental Effects to fuel tanks"
+            );
 
-            if (_state == GameState.FlightView)
+            try
             {
-                if (fuelTankDefinitions == null)
-                {
-                    fuelTankDefinitions = FindObjectOfType<FuelTankDefinitions>();
-                }
-                if (ventValveDefinitions == null)
-                {
-                    ventValveDefinitions = FindObjectOfType<VentValveDefinitions>();
-                }
+                InitializeDependencies();
+            }
+            catch (Exception ex)
+            {
+                HandleException(ex, "FFT Initialization");
+            }
 
-                if (fuelTankDefinitions != null && dataFuelTanks != null)
-                {
-                    fuelTankDefinitions.PopulateFuelTanks(dataFuelTanks);
-                }
+            _logger.LogInfo("Initialized FFTPlugin.");
+        }
+        public void SetLoadModule(ILoadModule loadModule)
+        {
+            _loadModule = LoadModule.Instance;
+        }
+        private void InitializeDependencies()
+        {
+            _logger.LogInfo("Subscribing to messages.... ");
+            _messageManager = MessageManager.Instance;
+        }
+        public override void OnPostInitialized()
+        {
+            _logger.LogInfo("Calling OnPostInitialized...");
+            base.OnPostInitialized();
 
-                if (ventValveDefinitions != null && dataValveParts != null)
-                {
-                    ventValveDefinitions.PopulateVentValve(dataValveParts);
-                }
+            try
+            {
+                _conditionsManager = ConditionsManager.Instance;
+                _logger.LogInfo("ConditionsManager initialized successfully.");
 
-                foreach (var module in FindObjectsOfType<Module_VentValve>())
-                {
-                    module.Activate();
-                }
-                foreach (var module in FindObjectsOfType<Module_TriggerVFX>())
-                {
-                    module.Activate();
-                }
+                _moduleController = ModuleController.Instance;
+                _logger.LogInfo("ModuleController initialized successfully.");
+
+                _startModule = StartModule.Instance;
+                _logger.LogInfo("StartModule initialized successfully.");
+
+                Manager.InitializeInstance();
+                _manager = Manager.Instance;
+                _logger.LogInfo("Manager initialized successfully.");
+
+                _refreshVesselData = RefreshVesselData.Instance;
+                _logger.LogInfo("RefreshVesselData initialized successfully.");
+
+                _resetModule = new ResetModule(_conditionsManager, _manager, _moduleController, _refreshVesselData);
+                _logger.LogInfo("ResetModule initialized successfully.");
+
+                _moduleVentValve = new Module_VentValve();
+                _logger.LogDebug("ModuleVentValve initialized successfully.");
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error during OnPostInitialized: {ex.Message}");
             }
         }
-        public GameState? GetGameState()
+        private void HandleException(Exception ex, string context)
         {
-            Logger.LogInfo("_state" + _state);
-            return _state;
+            _logger.LogError($"Error in {context}: {ex}");
         }
-        public override void OnPostInitialized() => base.OnPostInitialized();
     }
 }
