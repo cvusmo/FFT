@@ -6,7 +6,6 @@ using BepInEx.Logging;
 using FFT.Utilities;
 using KSP.Game;
 using KSP.Messages;
-using System;
 
 namespace FFT.Managers
 {
@@ -46,7 +45,7 @@ namespace FFT.Managers
             _messageManager.GameStateEntered -= GameStateEnteredHandler;
             _messageManager.GameStateLeft -= GameStateLeftHandler;
             _messageManager.VesselSituationChanged -= HandleVesselSituationChanged;
-        }    
+        }
         internal void CheckConditionsAndInformManager()
         {
             if (ConditionsReady())
@@ -70,7 +69,7 @@ namespace FFT.Managers
         public void ResetModuleState()
         {
             Manager.Instance.OnModuleReset();
-        }       
+        }
         internal void GameStateEnteredHandler(MessageCenterMessage obj)
         {
             try

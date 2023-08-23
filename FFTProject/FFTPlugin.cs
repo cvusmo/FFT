@@ -8,11 +8,10 @@ using BepInEx.Logging;
 using FFT.Controllers;
 using FFT.Controllers.Interfaces;
 using FFT.Managers;
+using FFT.Modules;
 using FFT.Utilities;
-using KSP.Messages;
 using SpaceWarp;
 using SpaceWarp.API.Mods;
-using FFT.Modules;
 
 namespace FFT
 {
@@ -23,6 +22,8 @@ namespace FFT
         public ConfigEntry<bool> FFTConfig { get; private set; }
 
         internal readonly ManualLogSource _logger = BepInEx.Logging.Logger.CreateLogSource("FFTPlugin");
+        public static FFTPlugin Instance { get; private set; }
+        public static string Path { get; private set; }
 
         private Manager _manager;
         private ConditionsManager _conditionsManager;
@@ -33,11 +34,6 @@ namespace FFT
         private RefreshVesselData _refreshVesselData;
         private ModuleController _moduleController;
         private Module_VentValve _moduleVentValve;
-        private FuelTankDefinitions _fuelTankDefinitions;
-        private VentValveDefinitions _ventValveDefinitions;
-        private Data_ValveParts _dataValveParts;
-        private Data_FuelTanks _dataFuelTanks;
-        public static FFTPlugin Instance { get; private set; }
         public FFTPlugin()
         {
             if (Instance != null)
@@ -46,32 +42,19 @@ namespace FFT
             }
             Instance = this;
         }
-        public static string Path { get; private set; }
         public override void OnPreInitialized()
         {
-            FFTPlugin.Path = this.PluginFolderPath;
+            Path = this.PluginFolderPath;
             base.OnPreInitialized();
             _logger.LogInfo("OnPreInitialized FFTPlugin.");
         }
-
         public override void OnInitialized()
         {
             base.OnInitialized();
+
             _logger.LogInfo("Initializing FFTPlugin...");
 
-            _fuelTankDefinitions = FuelTankDefinitions.Instance;
-            //_fuelTankDefinitions = new FuelTankDefinitions();
-            _dataFuelTanks = new Data_FuelTanks();
-            _ventValveDefinitions = VentValveDefinitions.Instance;
-            //_ventValveDefinitions = new VentValveDefinitions();
-            _dataValveParts = new Data_ValveParts();
-
-            Config.Bind(
-                "Fancy Fuel Tanks Settings",
-                "Enable VFX",
-                true,
-                "Fancy Fuel Tanks adds Dynamic Environmental Effects to fuel tanks"
-            );
+            Config.Bind("Fancy Fuel Tanks Settings", "Enable VFX", true, "Fancy Fuel Tanks adds Dynamic Environmental Effects to fuel tanks");
 
             try
             {
@@ -101,32 +84,33 @@ namespace FFT
             try
             {
                 _conditionsManager = ConditionsManager.Instance;
-                _logger.LogInfo("ConditionsManager initialized successfully.");
-
                 _moduleController = ModuleController.Instance;
-                _logger.LogInfo("ModuleController initialized successfully.");
-
                 _startModule = StartModule.Instance;
-                _logger.LogInfo("StartModule initialized successfully.");
 
                 Manager.InitializeInstance();
                 _manager = Manager.Instance;
-                _logger.LogInfo("Manager initialized successfully.");
 
                 _refreshVesselData = RefreshVesselData.Instance;
-                _logger.LogInfo("RefreshVesselData initialized successfully.");
-
                 _resetModule = new ResetModule(_conditionsManager, _manager, _moduleController, _refreshVesselData);
-                _logger.LogInfo("ResetModule initialized successfully.");
 
                 _moduleVentValve = new Module_VentValve();
-                _logger.LogDebug("ModuleVentValve initialized successfully.");
 
+                LogInitializationSuccesses();
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Error during OnPostInitialized: {ex.Message}");
             }
+        }
+        private void LogInitializationSuccesses()
+        {
+            _logger.LogInfo("ConditionsManager initialized successfully.");
+            _logger.LogInfo("ModuleController initialized successfully.");
+            _logger.LogInfo("StartModule initialized successfully.");
+            _logger.LogInfo("Manager initialized successfully.");
+            _logger.LogInfo("RefreshVesselData initialized successfully.");
+            _logger.LogInfo("ResetModule initialized successfully.");
+            _logger.LogDebug("ModuleVentValve initialized successfully.");
         }
         private void HandleException(Exception ex, string context)
         {

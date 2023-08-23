@@ -1,62 +1,43 @@
-﻿using KSP.Animation;
+﻿using System.Collections.Generic;
 using UnityEngine;
-using System.Collections.Generic;
-using VFX;
 
 namespace FFT.Modules
 {
     public class FuelTankDefinitions : MonoBehaviour
     {
-        public static FuelTankDefinitions Instance { get; private set; }
-
-        [SerializeField] public List<GameObject> fuelTankDefintions;
-        [SerializeField] public Data_FuelTanks DataFuelTanks;
-
+        [SerializeField]
+        public List<GameObject> fuelTankDefinitions;
+        [SerializeField]
+        public Data_VentValve _dataVentvalve;
+        [SerializeField]
+        public Data_FuelTanks _dataFuelTanks;
         public Dictionary<string, GameObject> fuelTanksDict = new Dictionary<string, GameObject>();
-        public bool isInitialized = false;
-        private void Awake()
-        {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(this.gameObject);
-            }
-            else
-            {
-                Instance = this;
-                DontDestroyOnLoad(this.gameObject);
-            }
-        }
+        public bool isInitialized;
+
         public void PopulateFuelTanks(Data_FuelTanks data)
         {
-            if (isInitialized) return;
-
-            fuelTanksDict["CV401"] = data.CV401;
-            fuelTanksDict["CV411"] = data.CV411;
-            fuelTanksDict["CV421"] = data.CV421;
-            fuelTanksDict["SP701"] = data.SP701;
-            fuelTanksDict["SR812"] = data.SR812;
-            fuelTanksDict["SR812A"] = data.SR812A;
-            fuelTanksDict["SR813"] = data.SR813;
-
-            isInitialized = true;
+            if (this.isInitialized)
+                return;
+            this.fuelTanksDict["CV401"] = data.CV401;
+            this.fuelTanksDict["CV411"] = data.CV411;
+            this.fuelTanksDict["CV421"] = data.CV421;
+            this.fuelTanksDict["SP701"] = data.SP701;
+            this.fuelTanksDict["SR812"] = data.SR812;
+            this.fuelTanksDict["SR812A"] = data.SR812A;
+            this.fuelTanksDict["SR813"] = data.SR813;
+            this.isInitialized = true;
         }
+
         public GameObject GetFuelTank(string tankName)
         {
-            if (fuelTanksDict.TryGetValue(tankName, out var tank))
-            {
-                return tank;
-            }
-
-            return null;
+            GameObject gameObject;
+            return this.fuelTanksDict.TryGetValue(tankName, out gameObject) ? gameObject : (GameObject)null;
         }
-        public Module_VentValve GetCoolingVFX(string tankName)
-        {
-            if (fuelTanksDict.TryGetValue(tankName, out var tank))
-            {
-                return tank.GetComponent<Module_VentValve>();
-            }
 
-            return null;
+        public Module_VentValve GetmoduleVentValve(string tankName)
+        {
+            GameObject gameObject;
+            return this.fuelTanksDict.TryGetValue(tankName, out gameObject) ? gameObject.GetComponent<Module_VentValve>() : (Module_VentValve)null;
         }
     }
 }

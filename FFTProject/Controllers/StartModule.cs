@@ -60,7 +60,7 @@ namespace FFT.Controllers
         }
         public void StartVentValve()
         {
-            if (DateTime.Now - _lastEventTriggerTime < ThrottleTimeSpan) return; // Throttling
+            if (DateTime.Now - _lastEventTriggerTime < ThrottleTimeSpan) return;
             _lastEventTriggerTime = DateTime.Now;
 
             Utility.RefreshActiveVesselAndCurrentManeuver();

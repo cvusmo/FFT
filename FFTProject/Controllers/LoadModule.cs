@@ -9,7 +9,6 @@ using FFT.Managers;
 using FFT.Modules;
 using FFT.Utilities;
 using Newtonsoft.Json;
-using System;
 
 namespace FFT.Controllers
 {
@@ -30,7 +29,12 @@ namespace FFT.Controllers
         private ModuleController _moduleController;
         private StartModule _startModule;
         private ResetModule _resetModule;
-        private Module_VentValve _moduleVentValve;  
+        private Module_VentValve _moduleVentValve;
+        private Data_ValveParts _dataValveParts;
+        private Data_VentValve _dataVentValve;
+        private Data_FuelTanks _dataFuelTanks;
+        private FuelTankDefinitions _fuelTankDefinitions;
+        private VentValveDefinitions _ventValveDefinitions;
 
         public event Action ModuleResetRequested;
 
@@ -58,6 +62,11 @@ namespace FFT.Controllers
             _startModule = StartModule.Instance;
             _resetModule = ResetModule.Instance;
             _moduleVentValve = new Module_VentValve();
+            _dataValveParts = new Data_ValveParts();
+            _dataVentValve = new Data_VentValve();
+            _dataFuelTanks = new Data_FuelTanks();
+            _fuelTankDefinitions = new FuelTankDefinitions();
+            _ventValveDefinitions = new VentValveDefinitions();
         }
         public void Boot()
         {
