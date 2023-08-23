@@ -1,8 +1,5 @@
-﻿using FFT.Modules;
-using System.Collections.Generic;
-using KSP.Sim;
+﻿using KSP.Sim;
 using KSP.Sim.Definitions;
-using System;
 using UnityEngine;
 
 namespace FFT.Modules

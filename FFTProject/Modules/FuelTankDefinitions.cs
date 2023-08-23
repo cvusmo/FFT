@@ -1,10 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using KSP.Sim.Definitions;
 using UnityEngine;
 
 namespace FFT.Modules
 {
-    public class FuelTankDefinitions : MonoBehaviour
+    [Serializable]
+    public class FuelTankDefinitions : ModuleData
     {
+        public override Type ModuleType => typeof(Module_VentValve);
+
         [SerializeField]
         public List<GameObject> fuelTankDefinitions;
         [SerializeField]

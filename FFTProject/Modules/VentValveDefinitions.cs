@@ -1,19 +1,22 @@
-﻿using System.Collections.Generic;
+﻿using KSP.Sim.Definitions;
 using UnityEngine;
 
 namespace FFT.Modules
 {
-    public class VentValveDefinitions : MonoBehaviour
+    [Serializable]
+    public class VentValveDefinitions : ModuleData
     {
+        public override Type ModuleType => typeof(Module_VentValve);
+
         [SerializeField]
         public List<GameObject> ventValveDefinitions;
         [SerializeField]
         public Data_VentValve DataVentValve;
         [SerializeField]
         public Data_ValveParts _dataValveParts;
+
         public Dictionary<string, GameObject> ventValveDict = new Dictionary<string, GameObject>();
         public bool isInitialized;
-
         public void PopulateVentValve(Data_ValveParts data)
         {
             if (this.isInitialized)
@@ -22,7 +25,6 @@ namespace FFT.Modules
             this.ventValveDict["RF2"] = data.RF2;
             this.isInitialized = true;
         }
-
         public GameObject GetVentValve(string valveName)
         {
             GameObject gameObject;
