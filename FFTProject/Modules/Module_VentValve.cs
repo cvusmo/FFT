@@ -11,11 +11,13 @@ namespace FFT.Modules
 {
     public class Module_VentValve : PartBehaviourModule
     {
-        
+
         [SerializeField] private FuelTankDefinitions _fuelTankDefinitions;
         [SerializeField] private VentValveDefinitions _ventValveDefinitions;
         [SerializeField] private GameObject VentValveVFX;
         [SerializeField] private GameObject CoolingVFX;
+
+        public Dictionary<string, GameObject> fuelTankDict = new Dictionary<string, GameObject>();
 
         public DynamicGravityForVFX DynamicGravityVent, DynamicGravityCooling;
         public Animator Animator;
@@ -39,12 +41,12 @@ namespace FFT.Modules
 
             if (PartBackingMode == PartBackingModes.Flight) //PartBackingMode == PartBackingModes.Flight
             {
-                InitializeVFX();
+                LazyInitializeVFX();
             }
         }
         public override void AddDataModules()
         {
-            FFTPlugin.Instance._logger.LogDebug("AddDataModules called...");
+            Debug.Log("AddDataModules called...");
             base.AddDataModules();
 
             _dataVentValve ??= new Data_VentValve();
@@ -62,28 +64,31 @@ namespace FFT.Modules
             _dataValveParts ??= new Data_ValveParts();
             DataModules.TryAddUnique(_dataValveParts, out _dataValveParts);
 
-            FFTPlugin.Instance._logger.LogDebug("Added Data Modules.");
+            Debug.Log("Added Data Modules.");
         }
-        internal void InitializeVFX()
-        {
-            FFTPlugin.Instance._logger.LogInfo("Module_VentValveVFX has started.");
 
-            if (VentValveVFX != null)
+        private void LazyInitializeVFX()
+        {
+            Debug.Log("Module_VentValveVFX has started.");
+            if (PSVentValveVFX == null && VentValveVFX != null)
             {
                 PSVentValveVFX = VentValveVFX.GetComponentInChildren<ParticleSystem>();
                 DynamicGravityVent = VentValveVFX.GetComponentInChildren<DynamicGravityForVFX>();
             }
 
-            if (CoolingVFX != null)
+            if (PSCoolingVFX == null && CoolingVFX != null)
             {
                 PSCoolingVFX = CoolingVFX.GetComponentInChildren<ParticleSystem>();
                 DynamicGravityCooling = CoolingVFX.GetComponentInParent<DynamicGravityForVFX>();
             }
 
-            Animator = GetComponentInParent<Animator>();
-            FFTPlugin.Instance._logger.LogDebug("InitializeVFX successfully started");
+            if (Animator == null)
+            {
+                Animator = GetComponentInParent<Animator>();
+            }
 
             Activate();
+            Debug.Log("InitializeVFX successfully started");
         }
         public override void OnModuleFixedUpdate(float fixedDeltaTime)
         {
@@ -109,7 +114,7 @@ namespace FFT.Modules
             }
             catch (Exception ex)
             {
-                FFTPlugin.Instance._logger.LogError($"Failed to refresh data and VFX: {ex.Message}");
+                Debug.LogError($"Failed to refresh data and VFX: {ex.Message}");
             }
         }
         private float GetCurveValue(AnimationCurve curve, float inputValue)
@@ -153,7 +158,7 @@ namespace FFT.Modules
             InAtmo = vesselData.IsInAtmosphere;
 
             double scaledFuelPercentage = vesselData.FuelPercentage / 100.0;
-            FL = _dataVentValve.VFXOpacityCurve.Evaluate((float)scaledFuelPercentage);
+            FL = _dataVentValve.VFXFuelPercentage.Evaluate((float)scaledFuelPercentage);
             Animator.SetFloat("FL", FL);
         }
         internal void StartVFX()
@@ -192,13 +197,13 @@ namespace FFT.Modules
             StartVFX();
             RefreshDataAndVFX();
             ActivateModule = true;
-            FFTPlugin.Instance._logger.LogInfo("Module_VentValve activated.");
+            Debug.Log("Module_VentValve activated.");
         }
         internal void Deactivate()
         {
             StopVFX();
             ActivateModule = false;
-            FFTPlugin.Instance._logger.LogInfo("Module_VentValve deactivated.");
+            Debug.Log("Module_VentValve deactivated.");
         }
     }
 }
