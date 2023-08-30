@@ -2,10 +2,6 @@
 //|             Dictionary for module types            |1|
 //|by cvusmo===========================================|4|
 //|====================================================|1|
-using FFT.Controllers.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace FFT.Controllers
 {

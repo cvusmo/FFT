@@ -4,6 +4,7 @@
 //|====================================================|1|
 using BepInEx.Logging;
 using FFT.Controllers;
+using FFT.Modules;
 using FFT.Utilities;
 using KSP.Game;
 
@@ -20,6 +21,9 @@ namespace FFT.Managers
         private readonly ModuleController _moduleController;
         private readonly LoadModule _loadModule;
         private readonly StartModule _startModule;
+        private readonly ResetModule _resetModule;
+        private Module_VentValve _ventValveModule;
+
         private bool isModuleLoaded = false;
         public static Manager Instance { get; private set; }
         private Manager()
@@ -30,6 +34,8 @@ namespace FFT.Managers
             _messageManager = MessageManager.Instance ?? throw new InvalidOperationException("MessageManager is not initialized.");
             _moduleController = ModuleController.Instance ?? throw new InvalidOperationException("ModuleController is not initialized.");
             _loadModule = LoadModule.Instance;
+            _resetModule = ResetModule.Instance ?? throw new InvalidOperationException("ResetModule is not initialized.");
+
             if (_loadModule == null)
             {
                 throw new InvalidOperationException("LoadModule is not initialized.");
@@ -75,6 +81,10 @@ namespace FFT.Managers
             {
                 Modules.Add(_loadModule);
             }
+
+            _ventValveModule = new Module_VentValve();
+            _ventValveModule.OnInitialize();
+
             isModuleLoaded = true;
         }
         internal List<LoadModule> InitializeModules()
@@ -111,7 +121,7 @@ namespace FFT.Managers
 
             _startModule?.StartVentValve();
             Logger.LogDebug("Module started");
-
+            _ventValveModule.Activate();
             ConditionsManager.Instance.HandleModuleLoaded();
         }
         internal bool IsStartingModule()
@@ -123,6 +133,7 @@ namespace FFT.Managers
         {
             _moduleController?.ResetAllModuleStates();
             Logger.LogInfo("All Modules have been Reset");
+            _ventValveModule.Deactivate();
         }
     }
 }

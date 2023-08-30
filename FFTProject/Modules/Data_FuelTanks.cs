@@ -1,5 +1,6 @@
-﻿using KSP.Sim.Definitions;
-using UnityEngine;
+﻿using UnityEngine;
+using System.Collections.Generic;
+using KSP.Sim.Definitions;
 
 namespace FFT.Modules
 {
@@ -7,20 +8,6 @@ namespace FFT.Modules
     public class Data_FuelTanks : ModuleData
     {
         public override Type ModuleType => typeof(Module_VentValve);
-        public Dictionary<string, GameObject> fuelTankDict;
-
-        public void Awake()
-        {
-            fuelTankDict = new Dictionary<string, GameObject>();
-
-            fuelTankDict.Add("CV401", CV401);
-            fuelTankDict.Add("CV411", CV411);
-            fuelTankDict.Add("CV421", CV421);
-            fuelTankDict.Add("SP701", SP701);
-            fuelTankDict.Add("SR812", SR812);
-            fuelTankDict.Add("SR812A", SR812A);
-            fuelTankDict.Add("SR813", SR813);
-        }
 
         [SerializeField]
         public GameObject CV401;
@@ -37,5 +24,19 @@ namespace FFT.Modules
         [SerializeField]
         public GameObject SR813;
 
+        public GameObject GetFuelTank(string tankName)
+        {
+            switch (tankName)
+            {
+                case "CV401": return CV401;
+                case "CV411": return CV411;
+                case "CV421": return CV421;
+                case "SP701": return SP701;
+                case "SR812": return SR812;
+                case "SR812A": return SR812A;
+                case "SR813": return SR813;
+                default: return null;
+            }
+        }
     }
 }

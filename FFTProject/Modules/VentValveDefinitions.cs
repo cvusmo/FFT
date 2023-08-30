@@ -1,59 +1,40 @@
-﻿using KSP.Animation;
+﻿using KSP.Sim.Definitions;
 using UnityEngine;
-using VFX;
-using FFT.Utilities;
-using FFT;
 
 namespace FFT.Modules
 {
-    public class VentValveDefinitions : MonoBehaviour
+    [Serializable]
+    public class VentValveDefinitions : ModuleData
     {
-        public static VentValveDefinitions Instance { get; private set; }
+        public override Type ModuleType => typeof(Module_VentValve);
 
-        [SerializeField] public List<GameObject> ventValveDefinitions;
-        [SerializeField] public Data_VentValve _dataVentValve;
-        [SerializeField] public Data_ValveParts _dataValveParts;
+        [SerializeField]
+        public List<GameObject> ventValveDefinitions;
+        [SerializeField]
+        public Data_VentValve DataVentValve;
+        [SerializeField]
+        public Data_ValveParts _dataValveParts;
 
         public Dictionary<string, GameObject> ventValveDict = new Dictionary<string, GameObject>();
-        public bool isInitialized = false;
-        private void Awake()
-        {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(this.gameObject);
-            }
-            else
-            {
-                Instance = this;
-                DontDestroyOnLoad(this.gameObject);
-            }
-        }
+        public bool isInitialized;
         public void PopulateVentValve(Data_ValveParts data)
         {
-            if (isInitialized) return;
-
-            ventValveDict["RF1"] = data.RF1;
-            ventValveDict["RF2"] = data.RF2;
-
-            isInitialized = true;
+            if (this.isInitialized)
+                return;
+            this.ventValveDict["RF1"] = data.RF1;
+            this.ventValveDict["RF2"] = data.RF2;
+            this.isInitialized = true;
         }
         public GameObject GetVentValve(string valveName)
         {
-            if (ventValveDict.TryGetValue(valveName, out var vent))
-            {
-                return vent;
-            }
-
-            return null;
+            GameObject gameObject;
+            return this.ventValveDict.TryGetValue(valveName, out gameObject) ? gameObject : (GameObject)null;
         }
+
         public Module_VentValve GetVentValveModule(string valveName)
         {
-            if (ventValveDict.TryGetValue(valveName, out var vent))
-            {
-                return vent.GetComponent<Module_VentValve>();
-            }
-
-            return null;
+            GameObject gameObject;
+            return this.ventValveDict.TryGetValue(valveName, out gameObject) ? gameObject.GetComponent<Module_VentValve>() : (Module_VentValve)null;
         }
     }
 }
