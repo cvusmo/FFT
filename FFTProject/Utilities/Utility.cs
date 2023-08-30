@@ -20,7 +20,7 @@ namespace FFT.Utilities
         public static GameState GameState;
         public static VesselSituations VesselSituations { get; private set; }
         public static MessageCenter MessageCenter { get; private set; }
-        public static double UniversalTime => GameManager.Instance.Game.UniverseModel.UniversalTime;
+        public static double UniverseTime => GameManager.Instance.Game.UniverseModel.UniverseTime;
         public static void Initialize()
         {
             RefreshGameManager();

@@ -5,7 +5,6 @@
 using FFT.Utilities;
 using KSP.Sim.Definitions;
 using UnityEngine;
-using VFX;
 
 namespace FFT.Modules
 {
@@ -14,17 +13,16 @@ namespace FFT.Modules
 
         [SerializeField] private FuelTankDefinitions _fuelTankDefinitions;
         [SerializeField] private VentValveDefinitions _ventValveDefinitions;
-        [SerializeField] private GameObject VentValveVFX;
-        [SerializeField] private GameObject CoolingVFX;
 
         public Dictionary<string, GameObject> fuelTankDict = new Dictionary<string, GameObject>();
 
-        public DynamicGravityForVFX DynamicGravityVent, DynamicGravityCooling;
         public Animator Animator;
-        public ParticleSystem PSVentValveVFX, PSCoolingVFX;
+        public Material vaporShaderMaterial;
+        private Material _cachedMaterial;
         private Data_VentValve _dataVentValve;
         private Data_ValveParts _dataValveParts;
         private Data_FuelTanks _dataFuelTanks;
+        private Renderer _cachedRenderer;
 
         internal float ASL, AGL, VV, HV, DP, SP, AT, ET, FL;
         internal bool InAtmo = true;
@@ -37,9 +35,11 @@ namespace FFT.Modules
         public override void OnInitialize()
         {
             base.OnInitialize();
+            _cachedRenderer = GetComponent<Renderer>();
+            _cachedMaterial = _cachedRenderer.material; 
             AddDataModules();
 
-            if (PartBackingMode == PartBackingModes.Flight) //PartBackingMode == PartBackingModes.Flight
+            if (PartBackingMode == PartBackingModes.Flight)
             {
                 LazyInitializeVFX();
             }
@@ -66,21 +66,9 @@ namespace FFT.Modules
 
             Debug.Log("Added Data Modules.");
         }
-
         private void LazyInitializeVFX()
         {
             Debug.Log("Module_VentValveVFX has started.");
-            if (PSVentValveVFX == null && VentValveVFX != null)
-            {
-                PSVentValveVFX = VentValveVFX.GetComponentInChildren<ParticleSystem>();
-                DynamicGravityVent = VentValveVFX.GetComponentInChildren<DynamicGravityForVFX>();
-            }
-
-            if (PSCoolingVFX == null && CoolingVFX != null)
-            {
-                PSCoolingVFX = CoolingVFX.GetComponentInChildren<ParticleSystem>();
-                DynamicGravityCooling = CoolingVFX.GetComponentInParent<DynamicGravityForVFX>();
-            }
 
             if (Animator == null)
             {
@@ -160,48 +148,26 @@ namespace FFT.Modules
             double scaledFuelPercentage = vesselData.FuelPercentage / 100.0;
             FL = _dataVentValve.VFXFuelPercentage.Evaluate((float)scaledFuelPercentage);
             Animator.SetFloat("FL", FL);
-        }
-        internal void StartVFX()
-        {
-            if (VentValveVFX != null)
-            {
-                var emission = PSVentValveVFX.emission;
-                emission.enabled = true;
-                PSVentValveVFX.Play();
-            }
-            if (CoolingVFX != null)
-            {
-                var emission = PSCoolingVFX.emission;
-                emission.enabled = true;
-                PSCoolingVFX.Play();
-            }
 
-        }
-        internal void StopVFX()
-        {
-            if (VentValveVFX != null)
-            {
-                var emission = PSVentValveVFX.emission;
-                emission.enabled = false;
-                PSVentValveVFX.Stop();
-            }
-            if (CoolingVFX != null)
-            {
-                var emission = PSCoolingVFX.emission;
-                emission.enabled = false;
-                PSCoolingVFX.Stop();
-            }
+            _cachedMaterial.SetFloat("_ASL", ASL);
+            _cachedMaterial.SetFloat("_AGL", AGL);
+
+            Material vaporShaderMaterial = _cachedRenderer.material;
+            vaporShaderMaterial.SetFloat("_ASL", ASL);
+            vaporShaderMaterial.SetFloat("_AGL", AGL);
         }
         internal void Activate()
         {
-            StartVFX();
+            _cachedMaterial.SetFloat("_IsVFXActive", 0.0f);
+            vaporShaderMaterial.SetFloat("_IsVFXActive", 1.0f);
             RefreshDataAndVFX();
             ActivateModule = true;
             Debug.Log("Module_VentValve activated.");
         }
         internal void Deactivate()
         {
-            StopVFX();
+            _cachedMaterial.SetFloat("_IsVFXActive", 1.0f);
+            vaporShaderMaterial.SetFloat("_IsVFXActive", 0.0f);
             ActivateModule = false;
             Debug.Log("Module_VentValve deactivated.");
         }
