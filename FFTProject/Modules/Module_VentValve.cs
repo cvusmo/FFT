@@ -1,7 +1,8 @@
 ﻿//|=====================Summary========================|0|
 //|            Module for Cooling/Vent VFX             |1|
 //|by cvusmo===========================================|4|
-//|====================================================|1|
+//|====================================================|2|
+using FFT.Controllers;
 using FFT.Utilities;
 using KSP.Sim.Definitions;
 using UnityEngine;
@@ -17,7 +18,7 @@ namespace FFT.Modules
         public Dictionary<string, GameObject> fuelTankDict = new Dictionary<string, GameObject>();
 
         public Animator Animator;
-        public Material vaporShaderMaterial;
+        public AnimationBridge animationBridge;
         private Material _cachedMaterial;
         private Data_VentValve _dataVentValve;
         private Data_ValveParts _dataValveParts;
@@ -36,11 +37,12 @@ namespace FFT.Modules
         {
             base.OnInitialize();
             _cachedRenderer = GetComponent<Renderer>();
-            _cachedMaterial = _cachedRenderer.material; 
+            _cachedMaterial = _cachedRenderer.material;
             AddDataModules();
 
             if (PartBackingMode == PartBackingModes.Flight)
             {
+                animationBridge = GetComponentInChildren<AnimationBridge>();
                 LazyInitializeVFX();
             }
         }
@@ -118,56 +120,62 @@ namespace FFT.Modules
         private void UpdateVFX()
         {
             var vesselData = RefreshVesselData.Instance;
+            Material vaporMaterial = _cachedRenderer.material;
 
             ASL = GetCurveValue(_dataVentValve.VFXASLCurve, (float)vesselData.AltitudeAsl);
-            Animator.SetFloat("ASL", ASL);
-
             AGL = GetCurveValue(_dataVentValve.VFXAGLCurve, (float)vesselData.AltitudeAgl);
-            Animator.SetFloat("AGL", AGL);
-
             VV = GetCurveValue(_dataVentValve.VFXVerticalVelocity, (float)vesselData.VerticalVelocity);
-            Animator.SetFloat("VV", VV);
-
             HV = GetCurveValue(_dataVentValve.VFXHorizontalVelocity, (float)vesselData.HorizontalVelocity);
-            Animator.SetFloat("HV", HV);
-
             DP = GetCurveValue(_dataVentValve.VFXDynamicPressure, (float)vesselData.DynamicPressure_kPa);
-            Animator.SetFloat("DP", DP);
-
             SP = GetCurveValue(_dataVentValve.VFXStaticPressure, (float)vesselData.StaticPressure_kPa);
-            Animator.SetFloat("SP", SP);
-
             AT = GetCurveValue(_dataVentValve.VFXAtmosphericTemperature, (float)vesselData.AtmosphericTemperature);
-            Animator.SetFloat("AT", AT);
-
             ET = GetCurveValue(_dataVentValve.VFXExternalTemperature, (float)vesselData.ExternalTemperature);
-            Animator.SetFloat("ET", ET);
-
-            InAtmo = vesselData.IsInAtmosphere;
-
             double scaledFuelPercentage = vesselData.FuelPercentage / 100.0;
             FL = _dataVentValve.VFXFuelPercentage.Evaluate((float)scaledFuelPercentage);
+
+            // Updating Animator
+            Animator.SetFloat("ASL", ASL);
+            Animator.SetFloat("AGL", AGL);
+            Animator.SetFloat("VV", VV);
+            Animator.SetFloat("HV", HV);
+            Animator.SetFloat("DP", DP);
+            Animator.SetFloat("SP", SP);
+            Animator.SetFloat("AT", AT);
+            Animator.SetFloat("ET", ET);
             Animator.SetFloat("FL", FL);
 
+            // Update _cachedMaterial
             _cachedMaterial.SetFloat("_ASL", ASL);
             _cachedMaterial.SetFloat("_AGL", AGL);
+            _cachedMaterial.SetFloat("_VV", VV);
+            _cachedMaterial.SetFloat("_HV", HV);
+            _cachedMaterial.SetFloat("_DP", DP);
+            _cachedMaterial.SetFloat("_SP", SP);
+            _cachedMaterial.SetFloat("_AT", AT);
+            _cachedMaterial.SetFloat("_ET", ET);
+            _cachedMaterial.SetFloat("_FL", FL);
 
-            Material vaporShaderMaterial = _cachedRenderer.material;
-            vaporShaderMaterial.SetFloat("_ASL", ASL);
-            vaporShaderMaterial.SetFloat("_AGL", AGL);
+            if (animationBridge != null)
+            {
+                float adjustedIntensity = animationBridge.intensity * ASL * 0.1f;
+                float adjustedStepDistance = animationBridge.stepDistance * AGL * 0.1f;
+                animationBridge.UpdateShaderProperties(_cachedMaterial, adjustedIntensity, adjustedStepDistance, ASL, AGL, VV, HV, DP, SP, AT, ET, FL);
+            }
         }
         internal void Activate()
         {
+            Material vaporMaterial = _cachedRenderer.material;
             _cachedMaterial.SetFloat("_IsVFXActive", 0.0f);
-            vaporShaderMaterial.SetFloat("_IsVFXActive", 1.0f);
+            vaporMaterial.SetFloat("_IsVFXActive", 1.0f);
             RefreshDataAndVFX();
             ActivateModule = true;
             Debug.Log("Module_VentValve activated.");
         }
         internal void Deactivate()
         {
+            Material vaporMaterial = _cachedRenderer.material;
             _cachedMaterial.SetFloat("_IsVFXActive", 1.0f);
-            vaporShaderMaterial.SetFloat("_IsVFXActive", 0.0f);
+            vaporMaterial.SetFloat("_IsVFXActive", 0.0f);
             ActivateModule = false;
             Debug.Log("Module_VentValve deactivated.");
         }
